@@ -15,7 +15,7 @@ import {
   Sun,
   Moon
 } from 'lucide-react';
-import { db, isSupabaseConfigured } from '@/lib/db';
+import { db, isSupabaseConfigured, generateUUID } from '@/lib/db';
 import { offlineQueue } from '@/lib/offline-queue';
 
 export default function NewInspection() {
@@ -108,7 +108,7 @@ export default function NewInspection() {
 
     setIsSubmitting(true);
     const costNum = parseFloat(estimatedCost);
-    const inspectionId = `quote-${Math.random().toString(36).substr(2, 9)}`;
+    const inspectionId = generateUUID();
 
     const metadata = {
       vehicleYear: parseInt(vehicleYear) || new Date().getFullYear(),

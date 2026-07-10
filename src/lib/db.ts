@@ -34,12 +34,25 @@ export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl!, supabaseAnonKey!)
   : null;
 
+// Helper to generate RFC4122 v4 compliant UUIDs
+export function generateUUID(): string {
+  if (typeof window !== 'undefined' && window.crypto && window.crypto.randomUUID) {
+    return window.crypto.randomUUID();
+  }
+  // Fallback for non-secure contexts
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 // Mock database store for local fallback when Supabase is not configured
 const MOCK_STORAGE_KEY = 'shopsnap_mock_inspections';
 
 const initialMocks: Inspection[] = [
   {
-    id: 'quote-1',
+    id: 'f3b8b1b1-21c6-4b2a-8742-df2de3507001',
     vehicleYear: 2018,
     vehicleMake: 'Ford',
     vehicleModel: 'F-150',
@@ -53,7 +66,7 @@ const initialMocks: Inspection[] = [
     updatedAt: new Date(Date.now() - 4 * 3600 * 1000).toISOString(),
   },
   {
-    id: 'quote-2',
+    id: 'a9b2c3d4-e5f6-4a5b-9c8d-7e6f5a4b3c2d',
     vehicleYear: 2020,
     vehicleMake: 'Toyota',
     vehicleModel: 'RAV4',
@@ -66,7 +79,7 @@ const initialMocks: Inspection[] = [
     updatedAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
   },
   {
-    id: 'quote-3',
+    id: 'e8d7c6b5-a493-4210-9876-54321abcdef0',
     vehicleYear: 2015,
     vehicleMake: 'Honda',
     vehicleModel: 'Civic',
@@ -173,7 +186,7 @@ export const db = {
 
   async create(inspection: Omit<Inspection, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): Promise<Inspection> {
     const now = new Date().toISOString();
-    const newId = inspection.id || `quote-${Math.random().toString(36).substr(2, 9)}`;
+    const newId = inspection.id || generateUUID();
     const newRecord: Inspection = {
       ...inspection,
       id: newId,
