@@ -162,8 +162,9 @@ export default function NewInspection() {
         });
 
         const quoteUrl = `${window.location.origin}/quote/${inspectionId}`;
-        const smsText = `ShopSnap: ${metadata.vehicleMake} ${metadata.vehicleModel} checkup. Urgent repair found: ${metadata.repairName}. Estimate: $${costNum.toFixed(2)}. Review clip & approve here: ${quoteUrl}`;
+        const smsText = `ShopSnap: ${metadata.vehicleMake} ${metadata.vehicleModel} checkup. Required service: ${metadata.repairName}. Estimate: $${costNum.toFixed(2)}. Review details & approve here: ${quoteUrl}`;
         
+        // Save locally for dashboard simulated toast overlay fallback
         localStorage.setItem('shopsnap_sms_log', JSON.stringify({
           id: inspectionId,
           phone: customerPhone,
@@ -181,7 +182,18 @@ export default function NewInspection() {
           }),
         });
 
+        // Format native SMS URI scheme (handles iOS Safari vs Android formatting differences)
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        const separator = isIOS ? '&' : '?';
+        const smsUrl = `sms:${customerPhone}${separator}body=${encodeURIComponent(smsText)}`;
+
+        // Route to dashboard first, then open native SMS protocol
         router.push('/dashboard');
+        
+        setTimeout(() => {
+          window.location.href = smsUrl;
+        }, 100);
       }
     } catch (error: any) {
       console.error('Error submitting inspection:', error);
