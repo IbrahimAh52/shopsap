@@ -722,7 +722,7 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
             <button
               type="button"
               onClick={() => onComplete(item.id)}
-              className="w-full h-9 rounded-lg text-xs font-bold bg-emerald-650 hover:bg-emerald-700 text-white transition-all flex items-center justify-center gap-1 border border-emerald-600/20"
+              className="w-full h-9 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all flex items-center justify-center gap-1 border border-emerald-600/20"
             >
               <CheckCircle className="w-3.5 h-3.5" />
               <span>Complete & Archive Repair</span>
