@@ -37,6 +37,17 @@ const CAR_MAKES_AND_MODELS: Record<string, string[]> = {
   Volkswagen: ['Jetta', 'Passat', 'Tiguan', 'Golf', 'Atlas']
 };
 
+const formatPhoneNumber = (value: string) => {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length <= 3) {
+    return digits;
+  }
+  if (digits.length <= 6) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  }
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+};
+
 export default function NewInspection() {
   const router = useRouter();
   
@@ -476,7 +487,7 @@ export default function NewInspection() {
                 type="tel"
                 placeholder="e.g. (555) 000-0000"
                 value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
+                onChange={(e) => setCustomerPhone(formatPhoneNumber(e.target.value))}
                 className={`w-full h-12 px-3 rounded-xl border focus:border-blue-500 focus:outline-none text-sm ${
                   isDark 
                     ? 'bg-gray-955 border-gray-800 text-white' 
