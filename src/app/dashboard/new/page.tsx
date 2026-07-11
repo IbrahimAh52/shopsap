@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useRef, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
   ArrowLeft, 
@@ -49,7 +49,22 @@ const formatPhoneNumber = (value: string) => {
 };
 
 export default function NewInspection() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#070b13] text-gray-400">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-2" />
+        <span className="text-sm">Loading Form...</span>
+      </div>
+    }>
+      <NewInspectionForm />
+    </Suspense>
+  );
+}
+
+function NewInspectionForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get('id');
   
   // Form states
   const [vehicleYear, setVehicleYear] = useState<string>(new Date().getFullYear().toString());
@@ -61,6 +76,35 @@ export default function NewInspection() {
   const [repairName, setRepairName] = useState<string>('');
   const [estimatedCost, setEstimatedCost] = useState<string>('');
   const [urgency, setUrgency] = useState<'URGENT' | 'RECOMMENDED' | 'MONITOR'>('RECOMMENDED');
+
+  // Pre-fill if loading from queue
+  useEffect(() => {
+    if (editId) {
+      db.get(editId).then((data) => {
+        if (data) {
+          setVehicleYear(data.vehicleYear.toString());
+          setVehicleMake(data.vehicleMake);
+          setVehicleModel(data.vehicleModel);
+          setCustomerPhone(data.customerPhone);
+          setRepairName(data.repairName);
+          setEstimatedCost(data.estimatedCost.toString());
+          setUrgency(data.urgency);
+          
+          if (CAR_MAKES_AND_MODELS[data.vehicleMake]) {
+            setIsOtherMake(false);
+          } else {
+            setIsOtherMake(true);
+          }
+          
+          if (CAR_MAKES_AND_MODELS[data.vehicleMake]?.includes(data.vehicleModel)) {
+            setIsOtherModel(false);
+          } else {
+            setIsOtherModel(true);
+          }
+        }
+      });
+    }
+  }, [editId]);
   
   // Media states
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
@@ -140,7 +184,8 @@ export default function NewInspection() {
 
     setIsSubmitting(true);
     const costNum = parseFloat(estimatedCost);
-    const inspectionId = generateUUID();
+    const inspectionId = editId || generateUUID();
+    const isEditing = !!editId;
 
     const metadata = {
       vehicleYear: parseInt(vehicleYear) || new Date().getFullYear(),
@@ -153,6 +198,46 @@ export default function NewInspection() {
     };
 
     try {
+      if (!videoBlob) {
+        // Queue without a video -> AWAITING_INSPECTION
+        if (isEditing) {
+          await db.update(inspectionId, {
+            ...metadata,
+            status: 'AWAITING_INSPECTION',
+          });
+          await fetch('/api/inspections', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: inspectionId,
+              status: 'AWAITING_INSPECTION',
+              ...metadata,
+            }),
+          });
+        } else {
+          await db.create({
+            id: inspectionId,
+            ...metadata,
+            status: 'AWAITING_INSPECTION',
+            videoUrl: '',
+          });
+          await fetch('/api/inspections', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: inspectionId,
+              ...metadata,
+              status: 'AWAITING_INSPECTION',
+              videoUrl: '',
+            }),
+          });
+        }
+        window.dispatchEvent(new Event('storage_updated'));
+        router.push('/dashboard');
+        return;
+      }
+
+      // If video IS present, upload and send
       if (!isOnline) {
         await offlineQueue.add({
           id: inspectionId,
@@ -162,12 +247,19 @@ export default function NewInspection() {
           metadata,
         });
 
-        await db.create({
-          id: inspectionId,
-          ...metadata,
-          status: 'AWAITING_INSPECTION',
-          videoUrl: '',
-        });
+        if (isEditing) {
+          await db.update(inspectionId, {
+            ...metadata,
+            status: 'AWAITING_INSPECTION',
+          });
+        } else {
+          await db.create({
+            id: inspectionId,
+            ...metadata,
+            status: 'AWAITING_INSPECTION',
+            videoUrl: '',
+          });
+        }
 
         window.dispatchEvent(new Event('storage_updated'));
         alert('You are offline! Inspection queued locally. It will upload automatically once connection is restored.');
@@ -186,12 +278,40 @@ export default function NewInspection() {
         const uploadData = await uploadRes.json();
         const videoUrl = uploadData.url;
 
-        await db.create({
-          id: inspectionId,
-          ...metadata,
-          status: 'SENT',
-          videoUrl,
-        });
+        if (isEditing) {
+          await db.update(inspectionId, {
+            ...metadata,
+            status: 'SENT',
+            videoUrl,
+          });
+          await fetch('/api/inspections', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: inspectionId,
+              status: 'SENT',
+              videoUrl,
+              ...metadata,
+            }),
+          });
+        } else {
+          await db.create({
+            id: inspectionId,
+            ...metadata,
+            status: 'SENT',
+            videoUrl,
+          });
+          await fetch('/api/inspections', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: inspectionId,
+              ...metadata,
+              status: 'SENT',
+              videoUrl,
+            }),
+          });
+        }
 
         const quoteUrl = `${window.location.origin}/quote/${inspectionId}`;
         const smsText = `ShopSnap: ${metadata.vehicleMake} ${metadata.vehicleModel} checkup. Required service: ${metadata.repairName}. Estimate: $${costNum.toFixed(2)}. Review details & approve here: ${quoteUrl}`;
@@ -562,15 +682,18 @@ export default function NewInspection() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all active:scale-[0.99] flex items-center justify-center gap-2 border border-blue-500/20 shadow-lg shadow-blue-500/10 text-base"
+            className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-750 text-white font-bold transition-all active:scale-[0.99] flex items-center justify-center gap-2 border border-blue-500/20 shadow-lg shadow-blue-500/10 text-base"
           >
             {isSubmitting ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Generating & Sending...</span>
+                <span>{videoBlob ? 'Generating & Sending...' : 'Saving to Queue...'}</span>
               </>
             ) : (
-              <span>{isOnline ? 'Generate & Send Text' : 'Queue Inspection (Offline)'}</span>
+              <>
+                <Check className="w-5 h-5" />
+                <span>{videoBlob ? 'Generate & Send Text' : 'Add to Queue (Awaiting Inspection)'}</span>
+              </>
             )}
           </button>
         </form>

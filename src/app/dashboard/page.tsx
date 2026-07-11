@@ -21,7 +21,8 @@ import {
   Copy,
   Check,
   ClipboardCheck,
-  UserCheck
+  UserCheck,
+  Camera
 } from 'lucide-react';
 import { db, Inspection, isSupabaseConfigured } from '@/lib/db';
 import { offlineQueue } from '@/lib/offline-queue';
@@ -676,6 +677,16 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
 
         {/* Dashboard Actions Context */}
         <div className="flex items-center gap-2 mt-1">
+          {item.status === 'AWAITING_INSPECTION' && (
+            <Link
+              href={`/dashboard/new?id=${item.id}`}
+              className="w-full h-9 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all flex items-center justify-center gap-1.5 border border-blue-500/20"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span>Record & Send Video</span>
+            </Link>
+          )}
+
           {item.status === 'SENT' && (
             <>
               {/* Resend/Copy Quote Link */}
