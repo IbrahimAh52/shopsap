@@ -18,6 +18,25 @@ import {
 import { db, isSupabaseConfigured, generateUUID } from '@/lib/db';
 import { offlineQueue } from '@/lib/offline-queue';
 
+const CAR_MAKES_AND_MODELS: Record<string, string[]> = {
+  Ford: ['F-150', 'Escape', 'Explorer', 'Focus', 'Mustang', 'Fusion', 'Edge', 'Super Duty'],
+  Toyota: ['RAV4', 'Camry', 'Corolla', 'Tacoma', 'Tundra', 'Highlander', 'Sienna', 'Prius'],
+  Chevrolet: ['Silverado', 'Equinox', 'Malibu', 'Cruze', 'Tahoe', 'Trax', 'Suburban', 'Camaro'],
+  Honda: ['Civic', 'Accord', 'CR-V', 'Pilot', 'Odyssey', 'Fit', 'HR-V', 'Ridgeline'],
+  Jeep: ['Wrangler', 'Grand Cherokee', 'Cherokee', 'Compass', 'Renegade', 'Gladiator'],
+  Nissan: ['Rogue', 'Altima', 'Sentra', 'Pathfinder', 'Frontier', 'Murano', 'Versa'],
+  Ram: ['1500', '2500', '3500'],
+  Subaru: ['Outback', 'Forester', 'Impreza', 'Crosstrek', 'Legacy', 'Ascent'],
+  Hyundai: ['Elantra', 'Sonata', 'Tucson', 'Santa Fe', 'Kona', 'Palisade'],
+  Kia: ['Forte', 'Optima', 'Sorento', 'Sportage', 'Soul', 'Telluride'],
+  GMC: ['Sierra', 'Terrain', 'Acadia', 'Yukon'],
+  Dodge: ['Charger', 'Challenger', 'Durango', 'Grand Caravan'],
+  Lexus: ['RX', 'ES', 'NX', 'IS', 'GX'],
+  BMW: ['3 Series', '5 Series', 'X3', 'X5', 'X7'],
+  'Mercedes-Benz': ['C-Class', 'E-Class', 'S-Class', 'GLC', 'GLE'],
+  Volkswagen: ['Jetta', 'Passat', 'Tiguan', 'Golf', 'Atlas']
+};
+
 export default function NewInspection() {
   const router = useRouter();
   
@@ -25,6 +44,8 @@ export default function NewInspection() {
   const [vehicleYear, setVehicleYear] = useState<string>(new Date().getFullYear().toString());
   const [vehicleMake, setVehicleMake] = useState<string>('');
   const [vehicleModel, setVehicleModel] = useState<string>('');
+  const [isOtherMake, setIsOtherMake] = useState<boolean>(false);
+  const [isOtherModel, setIsOtherModel] = useState<boolean>(false);
   const [customerPhone, setCustomerPhone] = useState<string>('');
   const [repairName, setRepairName] = useState<string>('');
   const [estimatedCost, setEstimatedCost] = useState<string>('');
@@ -333,35 +354,119 @@ export default function NewInspection() {
               </div>
               <div className="col-span-2">
                 <label className={`block text-[10px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Make <span className="text-red-500">*</span></label>
-                <input 
-                  type="text"
-                  placeholder="e.g. Ford, Toyota"
-                  value={vehicleMake}
-                  onChange={(e) => setVehicleMake(e.target.value)}
-                  className={`w-full h-12 px-3 rounded-xl border focus:border-blue-500 focus:outline-none text-sm ${
-                    isDark 
-                      ? 'bg-gray-955 border-gray-800 text-white' 
-                      : 'bg-gray-50 border-gray-300 text-gray-850'
-                  }`}
-                  required
-                />
+                {!isOtherMake ? (
+                  <select
+                    value={vehicleMake}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === 'Other') {
+                        setIsOtherMake(true);
+                        setVehicleMake('');
+                      } else {
+                        setVehicleMake(val);
+                      }
+                      setVehicleModel(''); // Reset model select when make changes
+                      setIsOtherModel(false);
+                    }}
+                    className={`w-full h-12 px-3 rounded-xl border focus:border-blue-500 focus:outline-none text-sm ${
+                      isDark 
+                        ? 'bg-gray-950 border-gray-800 text-white' 
+                        : 'bg-gray-50 border-gray-300 text-gray-850'
+                    }`}
+                    required
+                  >
+                    <option value="">Select Make...</option>
+                    {Object.keys(CAR_MAKES_AND_MODELS).map((make) => (
+                      <option key={make} value={make}>{make}</option>
+                    ))}
+                    <option value="Other">Other (Type manually)</option>
+                  </select>
+                ) : (
+                  <div className="relative">
+                    <input 
+                      type="text"
+                      placeholder="e.g. Tesla, Rivian"
+                      value={vehicleMake}
+                      onChange={(e) => setVehicleMake(e.target.value)}
+                      className={`w-full h-12 pl-3 pr-16 rounded-xl border focus:border-blue-500 focus:outline-none text-sm ${
+                        isDark 
+                          ? 'bg-gray-955 border-gray-800 text-white' 
+                          : 'bg-gray-50 border-gray-300 text-gray-850'
+                      }`}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsOtherMake(false);
+                        setVehicleMake('');
+                        setVehicleModel('');
+                        setIsOtherModel(false);
+                      }}
+                      className="absolute right-2 top-2 h-8 px-2 text-[10px] font-bold bg-blue-600 hover:bg-blue-750 text-white rounded-lg transition-colors"
+                    >
+                      Use List
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
             <div>
               <label className={`block text-[10px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Model <span className="text-red-500">*</span></label>
-              <input 
-                type="text"
-                placeholder="e.g. F-150, RAV4"
-                value={vehicleModel}
-                onChange={(e) => setVehicleModel(e.target.value)}
-                className={`w-full h-12 px-3 rounded-xl border focus:border-blue-500 focus:outline-none text-sm ${
-                  isDark 
-                    ? 'bg-gray-955 border-gray-800 text-white' 
-                    : 'bg-gray-50 border-gray-300 text-gray-850'
-                }`}
-                required
-              />
+              {vehicleMake && CAR_MAKES_AND_MODELS[vehicleMake] && !isOtherModel ? (
+                <select
+                  value={vehicleModel}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === 'Other') {
+                      setIsOtherModel(true);
+                      setVehicleModel('');
+                    } else {
+                      setVehicleModel(val);
+                    }
+                  }}
+                  className={`w-full h-12 px-3 rounded-xl border focus:border-blue-500 focus:outline-none text-sm ${
+                    isDark 
+                      ? 'bg-gray-950 border-gray-800 text-white' 
+                      : 'bg-gray-50 border-gray-300 text-gray-850'
+                  }`}
+                  required
+                >
+                  <option value="">Select Model...</option>
+                  {CAR_MAKES_AND_MODELS[vehicleMake].map((model) => (
+                    <option key={model} value={model}>{model}</option>
+                  ))}
+                  <option value="Other">Other (Type manually)</option>
+                </select>
+              ) : (
+                <div className="relative">
+                  <input 
+                    type="text"
+                    placeholder="e.g. F-150, RAV4"
+                    value={vehicleModel}
+                    onChange={(e) => setVehicleModel(e.target.value)}
+                    className={`w-full h-12 pl-3 pr-16 rounded-xl border focus:border-blue-500 focus:outline-none text-sm ${
+                      isDark 
+                        ? 'bg-gray-955 border-gray-800 text-white' 
+                        : 'bg-gray-50 border-gray-300 text-gray-850'
+                    }`}
+                    required
+                  />
+                  {vehicleMake && CAR_MAKES_AND_MODELS[vehicleMake] && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsOtherModel(false);
+                        setVehicleModel('');
+                      }}
+                      className="absolute right-2 top-2 h-8 px-2 text-[10px] font-bold bg-blue-600 hover:bg-blue-750 text-white rounded-lg transition-colors"
+                    >
+                      Use List
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Customer Phone */}
