@@ -147,7 +147,7 @@ export default function CustomerQuotePortal() {
     <div className="flex flex-col flex-1 min-h-screen bg-gray-50 text-gray-900 font-sans antialiased selection:bg-blue-100">
       
       {/* Carrier-grade Minimalist Top Indicator */}
-      <div className="bg-gray-900 text-white py-2 px-4 text-center text-[10px] font-bold tracking-widest flex items-center justify-center gap-1.5 uppercase select-none">
+      <div className="bg-gray-900 text-white pb-2 pt-safe px-4 text-center text-[10px] font-bold tracking-widest flex items-center justify-center gap-1.5 uppercase select-none">
         <Lock className="w-3 h-3 text-blue-400" /> SECURE VEHICLE TRANSACTION PORTAL
       </div>
 

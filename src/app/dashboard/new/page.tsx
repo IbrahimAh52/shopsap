@@ -208,7 +208,7 @@ export default function NewInspection() {
       isDark ? 'bg-[#070b13] text-gray-100' : 'bg-gray-50 text-gray-900'
     }`}>
       {/* Header */}
-      <header className={`sticky top-0 z-40 px-4 py-3 flex items-center justify-between border-b transition-colors duration-200 ${
+      <header className={`sticky top-0 z-40 px-4 pb-3 pt-safe flex items-center justify-between border-b transition-colors duration-200 ${
         isDark ? 'bg-[#0e1726]/90 border-gray-805/80 backdrop-blur' : 'bg-white border-gray-250/80 shadow-xs'
       }`}>
         <div className="flex items-center gap-3">
