@@ -177,11 +177,6 @@ function NewInspectionForm() {
       alert('Please fill out all required fields.');
       return;
     }
-    if (!videoBlob) {
-      alert('Please capture or select a 10-second inspection video.');
-      return;
-    }
-
     setIsSubmitting(true);
     const costNum = parseFloat(estimatedCost);
     const inspectionId = editId || generateUUID();
