@@ -270,18 +270,19 @@ export default function MechanicDashboard() {
       <header className={`sticky top-0 z-40 px-4 pb-3 pt-safe flex items-center justify-between border-b transition-colors duration-200 ${
         isDark ? 'bg-[#0e1726]/90 border-gray-855/80 backdrop-blur' : 'bg-white border-gray-250/80 shadow-xs'
       }`}>
-        <div className="flex items-center gap-2.5">
-          <div className="bg-blue-600 text-white p-2 rounded-xl">
-            <Wrench className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className={`text-lg font-bold tracking-tight ${isDark ? 'text-white' : 'text-gray-850'}`}>
-              ShopSnap
-            </h1>
-            <p className={`text-[10px] font-semibold uppercase tracking-wider ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-              Mechanic Portal
-            </p>
-          </div>
+        <div className="flex flex-col">
+          <h1 className={`text-2xl font-black tracking-tight ${
+            isDark 
+              ? 'text-white bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent' 
+              : 'text-gray-900'
+          }`}>
+            ShopSnap
+          </h1>
+          <p className={`text-[9px] font-bold uppercase tracking-widest mt-0.5 ${
+            isDark ? 'text-gray-500' : 'text-gray-400'
+          }`}>
+            Mechanic Portal
+          </p>
         </div>
 
         {/* Action controls */}
