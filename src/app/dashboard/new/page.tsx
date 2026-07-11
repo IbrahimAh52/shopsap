@@ -265,7 +265,6 @@ export default function NewInspection() {
             <input 
               type="file" 
               accept="video/*" 
-              capture="environment" 
               ref={fileInputRef}
               onChange={handleFileChange}
               className="hidden"
@@ -285,8 +284,8 @@ export default function NewInspection() {
                   <Camera className="w-8 h-8 stroke-[2.5]" />
                 </div>
                 <div className="text-center">
-                  <span className={`text-sm font-bold block ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Tap to Capture Video</span>
-                  <span className="text-[11px] text-gray-500 mt-0.5 block">Opens device camera</span>
+                  <span className={`text-sm font-bold block ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Tap to Add Video</span>
+                  <span className="text-[11px] text-gray-500 mt-0.5 block">Record or choose from camera roll</span>
                 </div>
               </button>
             ) : (
