@@ -61,7 +61,7 @@ function saveMockData(data: Inspection[]) {
 
 /**
  * Decodes a database row (from either Supabase snake_case or LocalStorage camelCase)
- * and translates signature-prefixed archive markers back into the in-memory 'ARCHIVED' status.
+ * and translates signature-prefixed archive markers and repair_name-packed VIN codes.
  */
 function decodeInspection(row: any): Inspection {
   let status: InspectionStatus = row.status || 'AWAITING_INSPECTION';
@@ -79,14 +79,26 @@ function decodeInspection(row: any): Inspection {
     }
   }
 
+  let repairName = row.repair_name !== undefined ? row.repair_name : row.repairName;
+  let vin = row.vin;
+
+  // Extract packed VIN from repairName if the column was missing during insert
+  if (repairName && repairName.includes(' [VIN:')) {
+    const match = repairName.match(/\s\[VIN:([A-Z0-9]{17})\]/i);
+    if (match) {
+      vin = match[1];
+      repairName = repairName.replace(/\s\[VIN:[A-Z0-9]{17}\]/i, '');
+    }
+  }
+
   return {
     id: row.id,
     vehicleYear: row.vehicle_year !== undefined ? row.vehicle_year : row.vehicleYear,
     vehicleMake: row.vehicle_make !== undefined ? row.vehicle_make : row.vehicleMake,
     vehicleModel: row.vehicle_model !== undefined ? row.vehicle_model : row.vehicleModel,
-    vin: row.vin,
+    vin,
     customerPhone: row.customer_phone !== undefined ? row.customer_phone : row.customerPhone,
-    repairName: row.repair_name !== undefined ? row.repair_name : row.repairName,
+    repairName,
     estimatedCost: Number(row.estimated_cost !== undefined ? row.estimated_cost : (row.estimatedCost || 0)),
     urgency: row.urgency,
     status,
@@ -144,28 +156,63 @@ export const db = {
     };
 
     if (isSupabaseConfigured && supabase) {
-      // During creation, status is fresh (never archived initially)
-      const { data, error } = await supabase
-        .from('inspections')
-        .insert([{
-          id: newRecord.id,
-          vehicle_year: newRecord.vehicleYear,
-          vehicle_make: newRecord.vehicleMake,
-          vehicle_model: newRecord.vehicleModel,
-          vin: newRecord.vin,
-          customer_phone: newRecord.customerPhone,
-          repair_name: newRecord.repairName,
-          estimated_cost: newRecord.estimatedCost,
-          urgency: newRecord.urgency,
-          status: newRecord.status === 'ARCHIVED' ? 'APPROVED' : newRecord.status, // Safety boundary
-          video_url: newRecord.videoUrl,
-          signature: newRecord.signature,
-          approved_at: newRecord.approvedAt,
-        }])
-        .select()
-        .single();
-      if (error) throw error;
-      return decodeInspection(data);
+      try {
+        // Try the clean schema insert first (assuming 'vin' column exists)
+        const { data, error } = await supabase
+          .from('inspections')
+          .insert([{
+            id: newRecord.id,
+            vehicle_year: newRecord.vehicleYear,
+            vehicle_make: newRecord.vehicleMake,
+            vehicle_model: newRecord.vehicleModel,
+            vin: newRecord.vin,
+            customer_phone: newRecord.customerPhone,
+            repair_name: newRecord.repairName,
+            estimated_cost: newRecord.estimatedCost,
+            urgency: newRecord.urgency,
+            status: newRecord.status === 'ARCHIVED' ? 'APPROVED' : newRecord.status,
+            video_url: newRecord.videoUrl,
+            signature: newRecord.signature,
+            approved_at: newRecord.approvedAt,
+          }])
+          .select()
+          .single();
+        if (error) throw error;
+        return decodeInspection(data);
+      } catch (err: any) {
+        // Fallback: If 'vin' column is missing in remote DB, pack it inside repair_name
+        if (
+          err.message?.includes('column "vin"') || 
+          err.message?.includes("'vin' column") ||
+          err.hint?.includes('column "vin"')
+        ) {
+          const packedRepairName = newRecord.vin 
+            ? `${newRecord.repairName} [VIN:${newRecord.vin}]` 
+            : newRecord.repairName;
+            
+          const { data, error } = await supabase
+            .from('inspections')
+            .insert([{
+              id: newRecord.id,
+              vehicle_year: newRecord.vehicleYear,
+              vehicle_make: newRecord.vehicleMake,
+              vehicle_model: newRecord.vehicleModel,
+              customer_phone: newRecord.customerPhone,
+              repair_name: packedRepairName,
+              estimated_cost: newRecord.estimatedCost,
+              urgency: newRecord.urgency,
+              status: newRecord.status === 'ARCHIVED' ? 'APPROVED' : newRecord.status,
+              video_url: newRecord.videoUrl,
+              signature: newRecord.signature,
+              approved_at: newRecord.approvedAt,
+            }])
+            .select()
+            .single();
+          if (error) throw error;
+          return decodeInspection(data);
+        }
+        throw err;
+      }
     }
 
     const current = getMockData();
@@ -177,52 +224,92 @@ export const db = {
   async update(id: string, updates: Partial<Omit<Inspection, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Inspection> {
     const now = new Date().toISOString();
 
-    // Fetch the current record first to determine original values for prefix mapping
     const current = await this.get(id);
     if (!current) throw new Error('Inspection not found');
 
-    // Handle 'ARCHIVED' conversion
     let targetStatus = updates.status !== undefined ? updates.status : current.status;
     let targetSignature = updates.signature !== undefined ? updates.signature : current.signature;
 
     if (updates.status === 'ARCHIVED') {
       if (current.status === 'APPROVED') {
-        targetStatus = 'APPROVED'; // Keep DB-safe enum
+        targetStatus = 'APPROVED';
         targetSignature = '[ARCHIVED_APPROVED] ' + (current.signature || '');
       } else if (current.status === 'DECLINED') {
-        targetStatus = 'DECLINED'; // Keep DB-safe enum
+        targetStatus = 'DECLINED';
         targetSignature = '[ARCHIVED_DECLINED]';
       } else {
-        targetStatus = current.status === 'ARCHIVED' ? 'APPROVED' : current.status; // Keep DB-safe enum
+        targetStatus = current.status === 'ARCHIVED' ? 'APPROVED' : current.status;
         targetSignature = '[ARCHIVED_PENDING]';
       }
     }
 
     if (isSupabaseConfigured && supabase) {
-      const dbUpdates: any = { updated_at: now };
-      if (updates.vehicleYear !== undefined) dbUpdates.vehicle_year = updates.vehicleYear;
-      if (updates.vehicleMake !== undefined) dbUpdates.vehicle_make = updates.vehicleMake;
-      if (updates.vehicleModel !== undefined) dbUpdates.vehicle_model = updates.vehicleModel;
-      if (updates.vin !== undefined) dbUpdates.vin = updates.vin;
-      if (updates.customerPhone !== undefined) dbUpdates.customer_phone = updates.customerPhone;
-      if (updates.repairName !== undefined) dbUpdates.repair_name = updates.repairName;
-      if (updates.estimatedCost !== undefined) dbUpdates.estimated_cost = updates.estimatedCost;
-      if (updates.urgency !== undefined) dbUpdates.urgency = updates.urgency;
-      if (updates.videoUrl !== undefined) dbUpdates.video_url = updates.videoUrl;
-      if (updates.approvedAt !== undefined) dbUpdates.approved_at = updates.approvedAt;
-      
-      // Map translated DB-safe status and signature
-      dbUpdates.status = targetStatus;
-      dbUpdates.signature = targetSignature;
+      try {
+        const dbUpdates: any = { updated_at: now };
+        if (updates.vehicleYear !== undefined) dbUpdates.vehicle_year = updates.vehicleYear;
+        if (updates.vehicleMake !== undefined) dbUpdates.vehicle_make = updates.vehicleMake;
+        if (updates.vehicleModel !== undefined) dbUpdates.vehicle_model = updates.vehicleModel;
+        if (updates.vin !== undefined) dbUpdates.vin = updates.vin;
+        if (updates.customerPhone !== undefined) dbUpdates.customer_phone = updates.customerPhone;
+        if (updates.repairName !== undefined) dbUpdates.repair_name = updates.repairName;
+        if (updates.estimatedCost !== undefined) dbUpdates.estimated_cost = updates.estimatedCost;
+        if (updates.urgency !== undefined) dbUpdates.urgency = updates.urgency;
+        if (updates.videoUrl !== undefined) dbUpdates.video_url = updates.videoUrl;
+        if (updates.approvedAt !== undefined) dbUpdates.approved_at = updates.approvedAt;
+        
+        dbUpdates.status = targetStatus;
+        dbUpdates.signature = targetSignature;
 
-      const { data, error } = await supabase
-        .from('inspections')
-        .update(dbUpdates)
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw error;
-      return decodeInspection(data);
+        const { data, error } = await supabase
+          .from('inspections')
+          .update(dbUpdates)
+          .eq('id', id)
+          .select()
+          .single();
+        if (error) throw error;
+        return decodeInspection(data);
+      } catch (err: any) {
+        // Fallback: If 'vin' column is missing in remote DB, pack it inside repair_name
+        if (
+          err.message?.includes('column "vin"') || 
+          err.message?.includes("'vin' column") ||
+          err.hint?.includes('column "vin"')
+        ) {
+          const dbUpdates: any = { updated_at: now };
+          if (updates.vehicleYear !== undefined) dbUpdates.vehicle_year = updates.vehicleYear;
+          if (updates.vehicleMake !== undefined) dbUpdates.vehicle_make = updates.vehicleMake;
+          if (updates.vehicleModel !== undefined) dbUpdates.vehicle_model = updates.vehicleModel;
+          if (updates.customerPhone !== undefined) dbUpdates.customer_phone = updates.customerPhone;
+          if (updates.estimatedCost !== undefined) dbUpdates.estimated_cost = updates.estimatedCost;
+          if (updates.urgency !== undefined) dbUpdates.urgency = updates.urgency;
+          if (updates.videoUrl !== undefined) dbUpdates.video_url = updates.videoUrl;
+          if (updates.approvedAt !== undefined) dbUpdates.approved_at = updates.approvedAt;
+          
+          dbUpdates.status = targetStatus;
+          dbUpdates.signature = targetSignature;
+
+          // Merge VIN with repair_name
+          const baseRepairName = updates.repairName !== undefined ? updates.repairName : current.repairName;
+          const targetVin = updates.vin !== undefined ? updates.vin : current.vin;
+          
+          let packedRepairName = baseRepairName;
+          if (targetVin) {
+            packedRepairName = baseRepairName.replace(/\s\[VIN:[A-Z0-9]{17}\]/i, '');
+            packedRepairName = `${packedRepairName} [VIN:${targetVin}]`;
+          }
+          dbUpdates.repair_name = packedRepairName;
+
+          const { data, error } = await supabase
+            .from('inspections')
+            .update(dbUpdates)
+            .eq('id', id)
+            .select()
+            .single();
+          if (error) throw error;
+          return decodeInspection(data);
+        }
+        throw err;
+      }
     }
 
     const currentMockList = getMockData();
