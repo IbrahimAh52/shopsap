@@ -267,8 +267,9 @@ export default function MechanicDashboard() {
       await db.update(id, { status: 'ARCHIVED' });
       loadData();
       window.dispatchEvent(new Event('storage_updated'));
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to complete work:', err);
+      alert('Failed to archive work: ' + (err.message || err) + '\n\nIf you are using Supabase, please verify you have run the SQL schema migration in supabase/schema.sql to support the ARCHIVED status and VIN columns.');
     }
   };
 
@@ -1006,6 +1007,21 @@ function ArchivedCard({ item, isDark, formatCost }: ArchivedCardProps) {
             <span>Declined / Cleared</span>
           </div>
         )}
+
+        {/* View Customer Receipt Link */}
+        <Link
+          href={`/quote/${item.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`w-full h-8 mt-2 rounded-lg text-[10px] font-bold border transition-colors flex items-center justify-center gap-1 ${
+            isDark 
+              ? 'bg-gray-800/40 border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white' 
+              : 'bg-gray-50 border-gray-250 text-gray-750 hover:bg-gray-100 hover:text-gray-900'
+          }`}
+        >
+          <ExternalLink className="w-3 h-3" />
+          <span>View Customer Receipt</span>
+        </Link>
       </div>
     </div>
   );

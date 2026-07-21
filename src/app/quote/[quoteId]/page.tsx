@@ -280,6 +280,20 @@ export default function CustomerQuotePortal() {
                   You have declined this repair. A service advisor will call you to discuss options.
                 </p>
               </div>
+            ) : inspection.status === 'ARCHIVED' ? (
+              <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex flex-col items-center text-center gap-1.5">
+                <CheckCircle className="w-8 h-8 text-blue-600" />
+                <h4 className="text-sm font-extrabold text-blue-900">REPAIR COMPLETED</h4>
+                <p className="text-xs text-blue-755 max-w-[240px]">
+                  This vehicle repair has been successfully completed and archived. Thank you for your business!
+                </p>
+                {inspection.signature && (
+                  <div className="text-[10px] font-mono text-gray-500 mt-2 space-y-0.5 text-left border-t border-blue-100/50 pt-2 w-full">
+                    <p><strong>Approved by:</strong> {inspection.signature}</p>
+                    <p><strong>Date:</strong> {inspection.approvedAt ? new Date(inspection.approvedAt).toLocaleString() : new Date().toLocaleString()}</p>
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="space-y-3">
                 <button
