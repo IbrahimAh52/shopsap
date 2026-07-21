@@ -21,6 +21,7 @@ import {
 import { db, isSupabaseConfigured, generateUUID } from '@/lib/db';
 import { offlineQueue } from '@/lib/offline-queue';
 import { auth } from '@/lib/auth';
+import { BrowserMultiFormatReader } from '@zxing/library';
 
 const CAR_MAKES_AND_MODELS: Record<string, string[]> = {
   Ford: ['F-150', 'Escape', 'Explorer', 'Focus', 'Mustang', 'Fusion', 'Edge', 'Super Duty'],
@@ -867,55 +868,68 @@ function VinScannerModal({ isOpen, onClose, onDecode, isDark }: VinScannerModalP
     }
   };
 
-  // Stop video stream
-  const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
-    }
-  };
-
-  // Start webcam
+  // Start webcam and barcode scanning
   useEffect(() => {
-    if (activeTab !== 'camera' || !isOpen) {
-      stopCamera();
+    if (activeTab !== 'camera' || !isOpen || !videoRef.current) {
       return;
     }
 
-    let activeStream: MediaStream | null = null;
+    const codeReader = new BrowserMultiFormatReader();
+    let isMounted = true;
 
-    async function initCamera() {
+    async function startScanning() {
       try {
-        const constraints = {
-          video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
-        };
-        const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-        activeStream = mediaStream;
-        setStream(mediaStream);
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
-        }
         setHasCameraPermission('granted');
+        await codeReader.decodeFromConstraints(
+          {
+            video: {
+              facingMode: 'environment',
+              width: { ideal: 640 },
+              height: { ideal: 485 }
+            }
+          },
+          videoRef.current!,
+          (result, error) => {
+            if (!isMounted) return;
+            if (result) {
+              const text = result.getText();
+              if (text) {
+                const cleanText = text.replace(/[^A-Z0-9]/g, '');
+                if (cleanText.length === 17) {
+                  handleDecode(cleanText);
+                } else {
+                  const match = text.match(/[A-HJ-NPR-Z0-9]{17}/i);
+                  if (match) {
+                    handleDecode(match[0]);
+                  }
+                }
+              }
+            }
+          }
+        );
       } catch (err) {
-        console.error('Camera access failed:', err);
+        console.error('Camera access or scanning failed:', err);
         setHasCameraPermission('denied');
       }
     }
 
-    initCamera();
+    startScanning();
 
     return () => {
-      if (activeStream) {
-        activeStream.getTracks().forEach(track => track.stop());
-      }
+      isMounted = false;
+      codeReader.reset();
     };
   }, [activeTab, isOpen]);
 
   // Decode handler
   const handleDecode = async (vin: string) => {
-    const cleanVin = vin.trim().toUpperCase();
+    if (isDecoding) return;
+
+    const cleanVin = vin.replace(/[^A-Z0-9]/g, '').trim().toUpperCase();
     if (cleanVin.length !== 17) {
-      setErrorMsg('VIN must be exactly 17 characters long.');
+      if (activeTab === 'manual') {
+        setErrorMsg('VIN must be exactly 17 characters long.');
+      }
       return;
     }
     
@@ -1046,7 +1060,6 @@ function VinScannerModal({ isOpen, onClose, onDecode, isDark }: VinScannerModalP
           <button 
             type="button" 
             onClick={() => {
-              stopCamera();
               onClose();
             }} 
             className={`p-1.5 rounded-lg text-xs font-semibold hover:bg-gray-700/20 transition-colors ${
@@ -1079,7 +1092,6 @@ function VinScannerModal({ isOpen, onClose, onDecode, isDark }: VinScannerModalP
             type="button"
             onClick={() => {
               setActiveTab('manual');
-              stopCamera();
               setErrorMsg(null);
             }}
             className={`py-3 font-bold border-b-2 transition-all ${
