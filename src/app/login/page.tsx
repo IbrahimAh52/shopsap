@@ -99,19 +99,6 @@ export default function LoginPage() {
           </div>
           <span className="text-xl font-bold tracking-tight text-slate-900">ShopSnap</span>
         </Link>
-        
-        {/* Dynamic Mode Indicator */}
-        <div className="flex items-center gap-1.5">
-          {isSupabase ? (
-            <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 shadow-xs">
-              <Database className="w-3.5 h-3.5 text-emerald-600" /> LIVE CLOUD MODE
-            </span>
-          ) : (
-            <span className="flex items-center gap-1.5 text-[10px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100 shadow-xs animate-pulse">
-              <Database className="w-3.5 h-3.5 text-amber-600" /> LOCAL OFFLINE MODE
-            </span>
-          )}
-        </div>
       </header>
 
       {/* Main card section */}
