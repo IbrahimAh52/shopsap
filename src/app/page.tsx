@@ -36,8 +36,8 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans antialiased selection:bg-blue-100 selection:text-blue-900">
       
-      {/* Navigation (with safe-area top padding for PWA notched screens) */}
-      <header className="border-b border-slate-100 px-6 pb-5 pt-safe max-w-7xl mx-auto flex items-center justify-between">
+      {/* Navigation (sticky, safe-area top padding PWA notched screens) */}
+      <header className="sticky top-0 z-40 w-full border-b border-slate-100 px-6 pb-5 pt-safe bg-white/90 backdrop-blur-md flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
           <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-650 flex items-center justify-center text-white shadow-md shadow-blue-500/10">
             <Settings className="w-5 h-5 animate-[spin_10s_linear_infinite]" />
