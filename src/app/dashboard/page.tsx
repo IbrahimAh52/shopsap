@@ -51,6 +51,7 @@ export default function MechanicDashboard() {
   // Search & Tab States
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
+  const [advisorFilter, setAdvisorFilter] = useState<'all' | 'mine'>('all');
 
   // Copy state tracker
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -273,8 +274,16 @@ export default function MechanicDashboard() {
     }
   };
 
-  // Filter inspections based on search query
+  // Filter inspections based on search query and advisor selection
   const searchedInspections = inspections.filter(item => {
+    // 1. Filter by advisor if 'mine' is selected
+    if (advisorFilter === 'mine' && currentUser) {
+      const matchEmail = item.advisorEmail && item.advisorEmail.toLowerCase() === currentUser.email.toLowerCase();
+      const matchName = item.advisorName && item.advisorName.toLowerCase() === currentUser.name.toLowerCase();
+      if (!matchEmail && !matchName) return false;
+    }
+
+    // 2. Filter by search query
     const query = searchQuery.toLowerCase().trim();
     if (!query) return true;
     return (
@@ -486,6 +495,34 @@ export default function MechanicDashboard() {
               Archived History ({archived.length})
             </button>
           </div>
+
+          {/* Advisor Filter Selector */}
+          {currentUser && (
+            <div className="flex items-center gap-1.5 p-1 bg-gray-50/5 dark:bg-gray-950/20 rounded-xl border border-gray-200/50 dark:border-gray-800/80 w-full md:w-auto">
+              <button
+                type="button"
+                onClick={() => setAdvisorFilter('all')}
+                className={`flex-1 md:flex-initial px-3.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider rounded-lg transition-all border ${
+                  advisorFilter === 'all'
+                    ? 'bg-blue-650/15 text-blue-500 border-blue-500/30'
+                    : 'text-gray-405 hover:text-gray-200 dark:hover:text-white border-transparent'
+                }`}
+              >
+                All Advisors
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdvisorFilter('mine')}
+                className={`flex-1 md:flex-initial px-3.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider rounded-lg transition-all border ${
+                  advisorFilter === 'mine'
+                    ? 'bg-blue-655/15 text-blue-500 border-blue-500/30'
+                    : 'text-gray-405 hover:text-gray-200 dark:hover:text-white border-transparent'
+                }`}
+              >
+                My Cards Only
+              </button>
+            </div>
+          )}
 
           {/* Search Input */}
           <div className="relative w-full md:w-72">
@@ -800,6 +837,15 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
                 <span>{item.vin}</span>
               </div>
             )}
+            {item.advisorName && (
+              <div className={`flex items-center gap-1 mt-1.5 text-[10px] font-semibold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                  isDark ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-700'
+                }`}>
+                  Advisor: {item.advisorName}
+                </span>
+              </div>
+            )}
           </div>
           <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider ${urgencyColor}`}>
             {item.urgency}
@@ -968,6 +1014,15 @@ function ArchivedCard({ item, isDark, formatCost }: ArchivedCardProps) {
               <div className="flex items-center gap-1.5 mt-1.5 text-[10px] font-mono uppercase tracking-wider text-blue-500 font-semibold">
                 <span className="text-[9px] font-bold bg-blue-500/10 px-1 py-0.5 rounded border border-blue-500/20">VIN</span>
                 <span>{item.vin}</span>
+              </div>
+            )}
+            {item.advisorName && (
+              <div className={`flex items-center gap-1 mt-1.5 text-[10px] font-semibold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                  isDark ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-700'
+                }`}>
+                  Advisor: {item.advisorName}
+                </span>
               </div>
             )}
           </div>

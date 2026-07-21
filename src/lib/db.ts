@@ -19,6 +19,8 @@ export interface Inspection {
   approvedAt?: string;
   createdAt: string;
   updatedAt: string;
+  advisorName?: string;
+  advisorEmail?: string;
 }
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -61,7 +63,7 @@ function saveMockData(data: Inspection[]) {
 
 /**
  * Decodes a database row (from either Supabase snake_case or LocalStorage camelCase)
- * and translates signature-prefixed archive markers and repair_name-packed VIN codes.
+ * and translates signature-prefixed archive markers and repair_name-packed attributes.
  */
 function decodeInspection(row: any): Inspection {
   let status: InspectionStatus = row.status || 'AWAITING_INSPECTION';
@@ -81,13 +83,33 @@ function decodeInspection(row: any): Inspection {
 
   let repairName = row.repair_name !== undefined ? row.repair_name : row.repairName;
   let vin = row.vin;
+  let advisorName = row.advisor_name !== undefined ? row.advisor_name : row.advisorName;
+  let advisorEmail = row.advisor_email !== undefined ? row.advisor_email : row.advisorEmail;
 
-  // Extract packed VIN from repairName if the column was missing during insert
+  // Decouple packed VIN from repairName if present
   if (repairName && repairName.includes(' [VIN:')) {
     const match = repairName.match(/\s\[VIN:([A-Z0-9]{17})\]/i);
     if (match) {
       vin = match[1];
       repairName = repairName.replace(/\s\[VIN:[A-Z0-9]{17}\]/i, '');
+    }
+  }
+
+  // Decouple packed ADVISOR from repairName if present
+  if (repairName && repairName.includes(' [ADVISOR:')) {
+    const match = repairName.match(/\s\[ADVISOR:([^\]]+)\]/i);
+    if (match) {
+      advisorName = match[1];
+      repairName = repairName.replace(/\s\[ADVISOR:[^\]]+\]/i, '');
+    }
+  }
+
+  // Decouple packed EMAIL from repairName if present
+  if (repairName && repairName.includes(' [EMAIL:')) {
+    const match = repairName.match(/\s\[EMAIL:([^\]]+)\]/i);
+    if (match) {
+      advisorEmail = match[1];
+      repairName = repairName.replace(/\s\[EMAIL:[^\]]+\]/i, '');
     }
   }
 
@@ -107,6 +129,8 @@ function decodeInspection(row: any): Inspection {
     approvedAt: row.approved_at !== undefined ? row.approved_at : row.approvedAt,
     createdAt: row.created_at !== undefined ? row.created_at : row.createdAt,
     updatedAt: row.updated_at !== undefined ? row.updated_at : row.updatedAt,
+    advisorName,
+    advisorEmail,
   };
 }
 
@@ -157,7 +181,7 @@ export const db = {
 
     if (isSupabaseConfigured && supabase) {
       try {
-        // Try the clean schema insert first (assuming 'vin' column exists)
+        // Try direct insert with custom columns
         const { data, error } = await supabase
           .from('inspections')
           .insert([{
@@ -174,21 +198,29 @@ export const db = {
             video_url: newRecord.videoUrl,
             signature: newRecord.signature,
             approved_at: newRecord.approvedAt,
+            advisor_name: newRecord.advisorName,
+            advisor_email: newRecord.advisorEmail,
           }])
           .select()
           .single();
         if (error) throw error;
         return decodeInspection(data);
       } catch (err: any) {
-        // Fallback: If 'vin' column is missing in remote DB, pack it inside repair_name
+        // Fallback: If custom columns are missing, pack them in repair_name
         if (
-          err.message?.includes('column "vin"') || 
-          err.message?.includes("'vin' column") ||
-          err.hint?.includes('column "vin"')
+          err.message?.includes('column "') || 
+          err.hint?.includes('column "')
         ) {
-          const packedRepairName = newRecord.vin 
-            ? `${newRecord.repairName} [VIN:${newRecord.vin}]` 
-            : newRecord.repairName;
+          let packedRepairName = newRecord.repairName;
+          if (newRecord.vin) {
+            packedRepairName = `${packedRepairName} [VIN:${newRecord.vin}]`;
+          }
+          if (newRecord.advisorName) {
+            packedRepairName = `${packedRepairName} [ADVISOR:${newRecord.advisorName}]`;
+          }
+          if (newRecord.advisorEmail) {
+            packedRepairName = `${packedRepairName} [EMAIL:${newRecord.advisorEmail}]`;
+          }
             
           const { data, error } = await supabase
             .from('inspections')
@@ -256,6 +288,8 @@ export const db = {
         if (updates.urgency !== undefined) dbUpdates.urgency = updates.urgency;
         if (updates.videoUrl !== undefined) dbUpdates.video_url = updates.videoUrl;
         if (updates.approvedAt !== undefined) dbUpdates.approved_at = updates.approvedAt;
+        if (updates.advisorName !== undefined) dbUpdates.advisor_name = updates.advisorName;
+        if (updates.advisorEmail !== undefined) dbUpdates.advisor_email = updates.advisorEmail;
         
         dbUpdates.status = targetStatus;
         dbUpdates.signature = targetSignature;
@@ -269,11 +303,10 @@ export const db = {
         if (error) throw error;
         return decodeInspection(data);
       } catch (err: any) {
-        // Fallback: If 'vin' column is missing in remote DB, pack it inside repair_name
+        // Fallback: If custom columns are missing, pack them in repair_name
         if (
-          err.message?.includes('column "vin"') || 
-          err.message?.includes("'vin' column") ||
-          err.hint?.includes('column "vin"')
+          err.message?.includes('column "') || 
+          err.hint?.includes('column "')
         ) {
           const dbUpdates: any = { updated_at: now };
           if (updates.vehicleYear !== undefined) dbUpdates.vehicle_year = updates.vehicleYear;
@@ -288,14 +321,27 @@ export const db = {
           dbUpdates.status = targetStatus;
           dbUpdates.signature = targetSignature;
 
-          // Merge VIN with repair_name
+          // Merge attributes into repair_name
           const baseRepairName = updates.repairName !== undefined ? updates.repairName : current.repairName;
           const targetVin = updates.vin !== undefined ? updates.vin : current.vin;
+          const targetAdvName = updates.advisorName !== undefined ? updates.advisorName : current.advisorName;
+          const targetAdvEmail = updates.advisorEmail !== undefined ? updates.advisorEmail : current.advisorEmail;
           
           let packedRepairName = baseRepairName;
+          // Strip out old tags to avoid duplication
+          packedRepairName = packedRepairName
+            .replace(/\s\[VIN:[A-Z0-9]{17}\]/i, '')
+            .replace(/\s\[ADVISOR:[^\]]+\]/i, '')
+            .replace(/\s\[EMAIL:[^\]]+\]/i, '');
+
           if (targetVin) {
-            packedRepairName = baseRepairName.replace(/\s\[VIN:[A-Z0-9]{17}\]/i, '');
             packedRepairName = `${packedRepairName} [VIN:${targetVin}]`;
+          }
+          if (targetAdvName) {
+            packedRepairName = `${packedRepairName} [ADVISOR:${targetAdvName}]`;
+          }
+          if (targetAdvEmail) {
+            packedRepairName = `${packedRepairName} [EMAIL:${targetAdvEmail}]`;
           }
           dbUpdates.repair_name = packedRepairName;
 

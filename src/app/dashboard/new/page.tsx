@@ -84,6 +84,7 @@ function NewInspectionForm() {
   const [urgency, setUrgency] = useState<'URGENT' | 'RECOMMENDED' | 'MONITOR'>('RECOMMENDED');
   const [isScannerOpen, setIsScannerOpen] = useState<boolean>(false);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
+  const [currentUser, setCurrentUser] = useState<{ email: string; name: string } | null>(null);
 
   // Verify user is authenticated
   useEffect(() => {
@@ -94,6 +95,7 @@ function NewInspectionForm() {
         router.push('/login');
       } else {
         if (active) {
+          setCurrentUser(user);
           setAuthLoading(false);
         }
       }
@@ -219,6 +221,8 @@ function NewInspectionForm() {
       repairName,
       estimatedCost: costNum,
       urgency,
+      advisorName: currentUser?.name || 'Advisor',
+      advisorEmail: currentUser?.email || '',
     };
 
     try {

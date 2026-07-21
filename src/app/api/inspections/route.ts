@@ -13,7 +13,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { id, vehicleYear, vehicleMake, vehicleModel, vin, customerPhone, repairName, estimatedCost, urgency, status, videoUrl, signature, approvedAt } = body;
+    const { id, vehicleYear, vehicleMake, vehicleModel, vin, customerPhone, repairName, estimatedCost, urgency, status, videoUrl, signature, approvedAt, advisorName, advisorEmail } = body;
 
     // Validate minimum required fields for creation
     if (!vehicleMake || !vehicleModel || !customerPhone || !repairName || estimatedCost === undefined) {
@@ -33,6 +33,8 @@ export async function POST(request: Request) {
       videoUrl,
       signature,
       approvedAt,
+      advisorName,
+      advisorEmail,
     };
 
     let result;
