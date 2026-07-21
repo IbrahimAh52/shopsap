@@ -74,6 +74,7 @@ function NewInspectionForm() {
   const [vehicleYear, setVehicleYear] = useState<string>(new Date().getFullYear().toString());
   const [vehicleMake, setVehicleMake] = useState<string>('');
   const [vehicleModel, setVehicleModel] = useState<string>('');
+  const [vehicleVin, setVehicleVin] = useState<string>('');
   const [isOtherMake, setIsOtherMake] = useState<boolean>(false);
   const [isOtherModel, setIsOtherModel] = useState<boolean>(false);
   const [customerPhone, setCustomerPhone] = useState<string>('');
@@ -110,6 +111,7 @@ function NewInspectionForm() {
           setVehicleYear(data.vehicleYear.toString());
           setVehicleMake(data.vehicleMake);
           setVehicleModel(data.vehicleModel);
+          setVehicleVin(data.vin || '');
           setCustomerPhone(data.customerPhone);
           setRepairName(data.repairName);
           setEstimatedCost(data.estimatedCost.toString());
@@ -211,6 +213,7 @@ function NewInspectionForm() {
       vehicleYear: parseInt(vehicleYear) || new Date().getFullYear(),
       vehicleMake,
       vehicleModel,
+      vin: vehicleVin,
       customerPhone,
       repairName,
       estimatedCost: costNum,
@@ -517,6 +520,25 @@ function NewInspectionForm() {
               </button>
             </div>
 
+            {/* VIN Code Field */}
+            <div>
+              <label className={`block text-[10px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                VIN (Vehicle Identification Number)
+              </label>
+              <input
+                type="text"
+                maxLength={17}
+                placeholder="17-Digit VIN Code"
+                value={vehicleVin}
+                onChange={(e) => setVehicleVin(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                className={`w-full h-12 px-3 rounded-xl border focus:border-blue-500 focus:outline-none text-sm font-mono uppercase tracking-wider ${
+                  isDark 
+                    ? 'bg-gray-950 border-gray-800 text-white border-gray-800' 
+                    : 'bg-gray-50 border-gray-300 text-gray-850'
+                }`}
+              />
+            </div>
+
             {/* Vehicle Year, Make, Model Grid */}
             <div className="grid grid-cols-3 gap-2">
               <div>
@@ -755,8 +777,9 @@ function NewInspectionForm() {
         <VinScannerModal
           isOpen={isScannerOpen}
           onClose={() => setIsScannerOpen(false)}
-          onDecode={(year, make, model) => {
+          onDecode={(year, make, model, vin) => {
             setVehicleYear(year);
+            if (vin) setVehicleVin(vin);
             // Handle make dropdown vs manual input
             if (CAR_MAKES_AND_MODELS[make]) {
               setIsOtherMake(false);
@@ -789,7 +812,7 @@ function NewInspectionForm() {
 interface VinScannerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onDecode: (year: string, make: string, model: string) => void;
+  onDecode: (year: string, make: string, model: string, vin?: string) => void;
   isDark: boolean;
 }
 
@@ -913,7 +936,7 @@ function VinScannerModal({ isOpen, onClose, onDecode, isDark }: VinScannerModalP
         const model = result.Model ? (result.Model.charAt(0).toUpperCase() + result.Model.slice(1).toLowerCase()) : 'Unknown';
         
         playSuccessBeep();
-        onDecode(year, make, model);
+        onDecode(year, make, model, cleanVin);
         return;
       }
       
@@ -921,7 +944,7 @@ function VinScannerModal({ isOpen, onClose, onDecode, isDark }: VinScannerModalP
       if (OFFLINE_DEMO_VEHICLES[cleanVin]) {
         const vehicle = OFFLINE_DEMO_VEHICLES[cleanVin];
         playSuccessBeep();
-        onDecode(vehicle.year, vehicle.make, vehicle.model);
+        onDecode(vehicle.year, vehicle.make, vehicle.model, cleanVin);
         return;
       }
 
@@ -936,7 +959,7 @@ function VinScannerModal({ isOpen, onClose, onDecode, isDark }: VinScannerModalP
       const year = vinYears[tenthChar];
       if (year) {
         playSuccessBeep();
-        onDecode(year, 'Decoded Vehicle', 'Model (Verify manual)');
+        onDecode(year, 'Decoded Vehicle', 'Model (Verify manual)', cleanVin);
         return;
       }
 
@@ -947,7 +970,7 @@ function VinScannerModal({ isOpen, onClose, onDecode, isDark }: VinScannerModalP
       if (OFFLINE_DEMO_VEHICLES[cleanVin]) {
         const vehicle = OFFLINE_DEMO_VEHICLES[cleanVin];
         playSuccessBeep();
-        onDecode(vehicle.year, vehicle.make, vehicle.model);
+        onDecode(vehicle.year, vehicle.make, vehicle.model, cleanVin);
         return;
       }
       setErrorMsg(err.message || 'Network error: could not decode VIN.');

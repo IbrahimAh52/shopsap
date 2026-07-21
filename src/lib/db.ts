@@ -1,13 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 
 export type UrgencyLevel = 'URGENT' | 'RECOMMENDED' | 'MONITOR';
-export type InspectionStatus = 'AWAITING_INSPECTION' | 'SENT' | 'APPROVED' | 'DECLINED';
+export type InspectionStatus = 'AWAITING_INSPECTION' | 'SENT' | 'APPROVED' | 'DECLINED' | 'ARCHIVED';
 
 export interface Inspection {
   id: string;
   vehicleYear: number;
   vehicleMake: string;
   vehicleModel: string;
+  vin?: string;
   customerPhone: string;
   repairName: string;
   estimatedCost: number;
@@ -91,6 +92,7 @@ export const db = {
         vehicleYear: row.vehicle_year,
         vehicleMake: row.vehicle_make,
         vehicleModel: row.vehicle_model,
+        vin: row.vin,
         customerPhone: row.customer_phone,
         repairName: row.repair_name,
         estimatedCost: Number(row.estimated_cost),
@@ -123,6 +125,7 @@ export const db = {
         vehicleYear: data.vehicle_year,
         vehicleMake: data.vehicle_make,
         vehicleModel: data.vehicle_model,
+        vin: data.vin,
         customerPhone: data.customer_phone,
         repairName: data.repair_name,
         estimatedCost: Number(data.estimated_cost),
@@ -158,6 +161,7 @@ export const db = {
           vehicle_year: newRecord.vehicleYear,
           vehicle_make: newRecord.vehicleMake,
           vehicle_model: newRecord.vehicleModel,
+          vin: newRecord.vin,
           customer_phone: newRecord.customerPhone,
           repair_name: newRecord.repairName,
           estimated_cost: newRecord.estimatedCost,
@@ -175,6 +179,7 @@ export const db = {
         vehicleYear: data.vehicle_year,
         vehicleMake: data.vehicle_make,
         vehicleModel: data.vehicle_model,
+        vin: data.vin,
         customerPhone: data.customer_phone,
         repairName: data.repair_name,
         estimatedCost: Number(data.estimated_cost),
@@ -202,6 +207,7 @@ export const db = {
       if (updates.vehicleYear !== undefined) dbUpdates.vehicle_year = updates.vehicleYear;
       if (updates.vehicleMake !== undefined) dbUpdates.vehicle_make = updates.vehicleMake;
       if (updates.vehicleModel !== undefined) dbUpdates.vehicle_model = updates.vehicleModel;
+      if (updates.vin !== undefined) dbUpdates.vin = updates.vin;
       if (updates.customerPhone !== undefined) dbUpdates.customer_phone = updates.customerPhone;
       if (updates.repairName !== undefined) dbUpdates.repair_name = updates.repairName;
       if (updates.estimatedCost !== undefined) dbUpdates.estimated_cost = updates.estimatedCost;
@@ -223,6 +229,7 @@ export const db = {
         vehicleYear: data.vehicle_year,
         vehicleMake: data.vehicle_make,
         vehicleModel: data.vehicle_model,
+        vin: data.vin,
         customerPhone: data.customer_phone,
         repairName: data.repair_name,
         estimatedCost: Number(data.estimated_cost),

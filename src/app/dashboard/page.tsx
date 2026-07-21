@@ -48,6 +48,10 @@ export default function MechanicDashboard() {
   // Theme state: defaults to dark (true) for greasy hands / bays
   const [isDark, setIsDark] = useState<boolean>(true);
 
+  // Search & Tab States
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
+
   // Copy state tracker
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -256,28 +260,11 @@ export default function MechanicDashboard() {
 
   // Action: Complete & Archive Repair Order
   const handleCompleteWork = async (id: string) => {
-    const confirmDone = confirm('Are you sure the repair is complete? This will clear it from the active dashboard.');
+    const confirmDone = confirm('Are you sure the repair is complete? This will archive the inspection.');
     if (!confirmDone) return;
 
     try {
-      // In a real database, we would set status = 'ARCHIVED' or delete.
-      // For this active board, we can set status to 'DECLINED' or a hidden completed state.
-      // Let's set status = 'DECLINED' so it clears from "Approved", or we can simply remove it from localStorage.
-      // To keep it simple, we will set status to a custom value 'ARCHIVED' or simply delete it.
-      // Let's implement an in-memory/localStorage delete for completion to clear the board!
-      if (isSupabaseConfigured) {
-        // For Supabase, we update it or delete. Let's just delete the record to keep the board clean.
-        const { supabase } = require('@/lib/db');
-        await supabase.from('inspections').delete().eq('id', id);
-      } else {
-        const data = localStorage.getItem('shopsnap_mock_inspections');
-        if (data) {
-          const list: Inspection[] = JSON.parse(data);
-          const filtered = list.filter(item => item.id !== id);
-          localStorage.setItem('shopsnap_mock_inspections', JSON.stringify(filtered));
-        }
-      }
-      
+      await db.update(id, { status: 'ARCHIVED' });
       loadData();
       window.dispatchEvent(new Event('storage_updated'));
     } catch (err) {
@@ -285,10 +272,25 @@ export default function MechanicDashboard() {
     }
   };
 
-  const awaitingInspection = inspections.filter(i => i.status === 'AWAITING_INSPECTION');
-  const sentToCustomer = inspections.filter(i => i.status === 'SENT');
-  const approvedReady = inspections.filter(i => i.status === 'APPROVED');
-  const declined = inspections.filter(i => i.status === 'DECLINED');
+  // Filter inspections based on search query
+  const searchedInspections = inspections.filter(item => {
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return true;
+    return (
+      item.vehicleMake.toLowerCase().includes(query) ||
+      item.vehicleModel.toLowerCase().includes(query) ||
+      item.vehicleYear.toString().includes(query) ||
+      item.customerPhone.toLowerCase().includes(query) ||
+      (item.vin && item.vin.toLowerCase().includes(query)) ||
+      item.repairName.toLowerCase().includes(query)
+    );
+  });
+
+  const awaitingInspection = searchedInspections.filter(i => i.status === 'AWAITING_INSPECTION');
+  const sentToCustomer = searchedInspections.filter(i => i.status === 'SENT');
+  const approvedReady = searchedInspections.filter(i => i.status === 'APPROVED');
+  const declined = searchedInspections.filter(i => i.status === 'DECLINED');
+  const archived = searchedInspections.filter(i => i.status === 'ARCHIVED');
 
   const formatCost = (val: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
@@ -456,117 +458,203 @@ export default function MechanicDashboard() {
           ))}
         </section>
 
-        {/* Vehicle Status Sections */}
-        <section className="space-y-6">
-          
-          {/* Awaiting Inspection */}
-          <div className="space-y-3">
-            <div className={`flex items-center gap-2 border-b pb-1.5 ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-              <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
-              <h2 className={`font-bold text-xs uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Awaiting Video / Inspection ({awaitingInspection.length})
-              </h2>
-            </div>
-            {awaitingInspection.length === 0 ? (
-              <p className="text-xs text-gray-400 italic py-2">No vehicles in queue.</p>
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {awaitingInspection.map(i => (
-                  <InspectionCard 
-                    key={i.id} 
-                    item={i} 
-                    isDark={isDark} 
-                    onCopyLink={handleCopyLink}
-                    copiedId={copiedId}
-                    onVerbalApproval={setVerbalApprovalId}
-                    onComplete={handleCompleteWork}
-                  />
-                ))}
-              </div>
-            )}
+        {/* Search & Tabs Controls */}
+        <div className={`p-4 rounded-2xl border my-6 flex flex-col md:flex-row gap-4 justify-between items-center transition-colors duration-200 ${
+          isDark ? 'bg-[#0f172a]/40 border-gray-805/85' : 'bg-white border-gray-200 shadow-2xs'
+        }`}>
+          {/* Tab Switcher */}
+          <div className="flex items-center gap-1.5 p-1 bg-gray-50/5 dark:bg-gray-950/20 rounded-xl border border-gray-200/50 dark:border-gray-800/80 w-full md:w-auto">
+            <button
+              onClick={() => setActiveTab('active')}
+              className={`flex-1 md:flex-initial px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${
+                activeTab === 'active'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-gray-405 hover:text-gray-200 dark:hover:text-white'
+              }`}
+            >
+              Active Board ({awaitingInspection.length + sentToCustomer.length + approvedReady.length + declined.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('archived')}
+              className={`flex-1 md:flex-initial px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${
+                activeTab === 'archived'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-gray-405 hover:text-gray-200 dark:hover:text-white'
+              }`}
+            >
+              Archived History ({archived.length})
+            </button>
           </div>
 
-          {/* Sent to Customer */}
-          <div className="space-y-3">
-            <div className={`flex items-center gap-2 border-b pb-1.5 ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-              <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-              <h2 className={`font-bold text-xs uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Sent to Customer - Awaiting Approval ({sentToCustomer.length})
-              </h2>
-            </div>
-            {sentToCustomer.length === 0 ? (
-              <p className="text-xs text-gray-400 italic py-2">No inspections currently sent.</p>
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {sentToCustomer.map(i => (
-                  <InspectionCard 
-                    key={i.id} 
-                    item={i} 
-                    isDark={isDark} 
-                    onCopyLink={handleCopyLink}
-                    copiedId={copiedId}
-                    onVerbalApproval={setVerbalApprovalId}
-                    onComplete={handleCompleteWork}
-                  />
-                ))}
-              </div>
+          {/* Search Input */}
+          <div className="relative w-full md:w-72">
+            <input
+              type="text"
+              placeholder="Search VIN, vehicle, phone..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={`w-full h-10 pl-9 pr-8 text-xs rounded-xl border focus:border-blue-500 focus:outline-none transition-colors ${
+                isDark 
+                  ? 'bg-gray-950 border-gray-855 text-white placeholder-gray-500 border-gray-850' 
+                  : 'bg-gray-50 border-gray-300 text-gray-850 placeholder-gray-400'
+              }`}
+            />
+            <span className="absolute left-3 top-3 text-gray-500">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </span>
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3.5 top-2.5 text-lg font-bold text-gray-400 hover:text-gray-200"
+              >
+                &times;
+              </button>
             )}
           </div>
+        </div>
 
-          {/* Approved */}
-          <div className="space-y-3">
-            <div className={`flex items-center gap-2 border-b pb-1.5 ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-              <h2 className={`font-bold text-xs uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Approved - Ready to Work ({approvedReady.length})
-              </h2>
-            </div>
-            {approvedReady.length === 0 ? (
-              <p className="text-xs text-gray-400 italic py-2">No approved repairs ready to start.</p>
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {approvedReady.map(i => (
-                  <InspectionCard 
-                    key={i.id} 
-                    item={i} 
-                    isDark={isDark} 
-                    onCopyLink={handleCopyLink}
-                    copiedId={copiedId}
-                    onVerbalApproval={setVerbalApprovalId}
-                    onComplete={handleCompleteWork}
-                  />
-                ))}
+        {activeTab === 'active' ? (
+          /* Vehicle Status Sections */
+          <section className="space-y-6">
+            
+            {/* Awaiting Inspection */}
+            <div className="space-y-3">
+              <div className={`flex items-center gap-2 border-b pb-1.5 ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+                <h2 className={`font-bold text-xs uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Awaiting Video / Inspection ({awaitingInspection.length})
+                </h2>
               </div>
-            )}
-          </div>
+              {awaitingInspection.length === 0 ? (
+                <p className="text-xs text-gray-400 italic py-2">No vehicles in queue.</p>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {awaitingInspection.map(i => (
+                    <InspectionCard 
+                      key={i.id} 
+                      item={i} 
+                      isDark={isDark} 
+                      onCopyLink={handleCopyLink}
+                      copiedId={copiedId}
+                      onVerbalApproval={setVerbalApprovalId}
+                      onComplete={handleCompleteWork}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
 
-          {/* Declined */}
-          <div className="space-y-3">
+            {/* Sent to Customer */}
+            <div className="space-y-3">
+              <div className={`flex items-center gap-2 border-b pb-1.5 ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
+                <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                <h2 className={`font-bold text-xs uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Sent to Customer - Awaiting Approval ({sentToCustomer.length})
+                </h2>
+              </div>
+              {sentToCustomer.length === 0 ? (
+                <p className="text-xs text-gray-400 italic py-2">No inspections currently sent.</p>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {sentToCustomer.map(i => (
+                    <InspectionCard 
+                      key={i.id} 
+                      item={i} 
+                      isDark={isDark} 
+                      onCopyLink={handleCopyLink}
+                      copiedId={copiedId}
+                      onVerbalApproval={setVerbalApprovalId}
+                      onComplete={handleCompleteWork}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Approved */}
+            <div className="space-y-3">
+              <div className={`flex items-center gap-2 border-b pb-1.5 ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                <h2 className={`font-bold text-xs uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Approved - Ready to Work ({approvedReady.length})
+                </h2>
+              </div>
+              {approvedReady.length === 0 ? (
+                <p className="text-xs text-gray-400 italic py-2">No approved repairs ready to start.</p>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {approvedReady.map(i => (
+                    <InspectionCard 
+                      key={i.id} 
+                      item={i} 
+                      isDark={isDark} 
+                      onCopyLink={handleCopyLink}
+                      copiedId={copiedId}
+                      onVerbalApproval={setVerbalApprovalId}
+                      onComplete={handleCompleteWork}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Declined */}
+            <div className="space-y-3">
+              <div className={`flex items-center gap-2 border-b pb-1.5 ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
+                <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                <h2 className={`font-bold text-xs uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Declined ({declined.length})
+                </h2>
+              </div>
+              {declined.length === 0 ? (
+                <p className="text-xs text-gray-400 italic py-2">No declined quotes.</p>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {declined.map(i => (
+                    <InspectionCard 
+                      key={i.id} 
+                      item={i} 
+                      isDark={isDark} 
+                      onCopyLink={handleCopyLink}
+                      copiedId={copiedId}
+                      onVerbalApproval={setVerbalApprovalId}
+                      onComplete={handleCompleteWork}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        ) : (
+          /* Archived History */
+          <section className="space-y-4">
             <div className={`flex items-center gap-2 border-b pb-1.5 ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-              <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+              <div className="w-2.5 h-2.5 rounded-full bg-slate-500 animate-pulse" />
               <h2 className={`font-bold text-xs uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Declined ({declined.length})
+                Archived Repair Orders ({archived.length})
               </h2>
             </div>
-            {declined.length === 0 ? (
-              <p className="text-xs text-gray-400 italic py-2">No declined quotes.</p>
+
+            {archived.length === 0 ? (
+              <div className={`text-center py-12 rounded-2xl border border-dashed transition-colors duration-200 ${
+                isDark ? 'border-gray-800 bg-gray-950/20' : 'border-gray-200 bg-gray-50/50'
+              }`}>
+                <p className="text-xs text-gray-450 italic">No archived inspections found matching your criteria.</p>
+              </div>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {declined.map(i => (
-                  <InspectionCard 
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {archived.map(i => (
+                  <ArchivedCard 
                     key={i.id} 
                     item={i} 
                     isDark={isDark} 
-                    onCopyLink={handleCopyLink}
-                    copiedId={copiedId}
-                    onVerbalApproval={setVerbalApprovalId}
-                    onComplete={handleCompleteWork}
+                    formatCost={formatCost}
                   />
                 ))}
               </div>
             )}
-          </div>
-        </section>
+          </section>
+        )}
       </main>
 
       {/* Massive Floating + New Inspection Button */}
@@ -701,10 +789,16 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
             <h3 className={`font-bold text-base ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
               {item.vehicleYear} {item.vehicleMake} {item.vehicleModel}
             </h3>
-            <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-405">
-              <Phone className="w-3 h-3 text-gray-450" />
+            <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-450">
+              <Phone className="w-3 h-3 text-gray-455 shrink-0" />
               <span>{item.customerPhone}</span>
             </div>
+            {item.vin && (
+              <div className="flex items-center gap-1.5 mt-1.5 text-[10px] font-mono uppercase tracking-wider text-blue-500 font-semibold">
+                <span className="text-[9px] font-bold bg-blue-500/10 px-1 py-0.5 rounded border border-blue-500/20">VIN</span>
+                <span>{item.vin}</span>
+              </div>
+            )}
           </div>
           <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider ${urgencyColor}`}>
             {item.urgency}
@@ -828,6 +922,90 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
             </Link>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// ARCHIVED CARD COMPONENT
+// ==========================================
+
+interface ArchivedCardProps {
+  item: Inspection;
+  isDark: boolean;
+  formatCost: (val: number) => string;
+}
+
+function ArchivedCard({ item, isDark, formatCost }: ArchivedCardProps) {
+  const formattedDate = new Date(item.updatedAt || item.createdAt).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  return (
+    <div className={`relative rounded-xl border p-4 transition-colors duration-200 overflow-hidden flex flex-col justify-between ${
+      isDark ? 'bg-[#0f172a]/65 border-gray-850' : 'bg-white border-gray-250/80 shadow-xs'
+    }`}>
+      {/* Indicator Stripe */}
+      <div className="absolute left-0 top-0 bottom-0 w-1 bg-slate-500" />
+      
+      <div className="pl-1">
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className={`font-bold text-base ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+              {item.vehicleYear} {item.vehicleMake} {item.vehicleModel}
+            </h3>
+            <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-450">
+              <Phone className="w-3 h-3 text-gray-450 shrink-0" />
+              <span>{item.customerPhone}</span>
+            </div>
+            {item.vin && (
+              <div className="flex items-center gap-1.5 mt-1.5 text-[10px] font-mono uppercase tracking-wider text-blue-500 font-semibold">
+                <span className="text-[9px] font-bold bg-blue-500/10 px-1 py-0.5 rounded border border-blue-500/20">VIN</span>
+                <span>{item.vin}</span>
+              </div>
+            )}
+          </div>
+          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider ${
+            isDark ? 'bg-slate-500/10 text-slate-400 border-slate-900/30' : 'bg-slate-100 text-slate-700 border-slate-200'
+          }`}>
+            Archived
+          </span>
+        </div>
+
+        {/* Details */}
+        <div className="mt-3.5 space-y-1">
+          <p className={`text-sm font-bold line-clamp-1 ${isDark ? 'text-gray-300' : 'text-gray-750'}`}>{item.repairName}</p>
+          <div className="flex items-center justify-between text-xs pt-1.5">
+            <span className="text-gray-405">Estimate:</span>
+            <span className={`font-extrabold text-sm ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{formatCost(item.estimatedCost)}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className={`border-t mt-4 pt-3 flex flex-col gap-1.5 pl-1 ${
+        isDark ? 'border-gray-800/80' : 'border-gray-150'
+      }`}>
+        <div className="flex items-center justify-between text-[9px] text-gray-500">
+          <span className="font-semibold uppercase tracking-wider">Date & Time</span>
+          <span className="font-mono">{formattedDate}</span>
+        </div>
+
+        {item.signature ? (
+          <div className="flex items-center gap-1 text-[9px] text-emerald-500 font-bold uppercase tracking-wider">
+            <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+            <span>Approved by {item.signature}</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 text-[9px] text-red-500 font-bold uppercase tracking-wider">
+            <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />
+            <span>Declined / Cleared</span>
+          </div>
+        )}
       </div>
     </div>
   );

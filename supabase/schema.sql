@@ -1,5 +1,5 @@
 -- Create Enum Types
-CREATE TYPE inspection_status AS ENUM ('AWAITING_INSPECTION', 'SENT', 'APPROVED', 'DECLINED');
+CREATE TYPE inspection_status AS ENUM ('AWAITING_INSPECTION', 'SENT', 'APPROVED', 'DECLINED', 'ARCHIVED');
 CREATE TYPE urgency_level AS ENUM ('URGENT', 'RECOMMENDED', 'MONITOR');
 
 -- Create Inspections Table
@@ -8,6 +8,7 @@ CREATE TABLE inspections (
   vehicle_year INT NOT NULL,
   vehicle_make VARCHAR(255) NOT NULL,
   vehicle_model VARCHAR(255) NOT NULL,
+  vin VARCHAR(17),
   customer_phone VARCHAR(50) NOT NULL,
   repair_name VARCHAR(255) NOT NULL,
   estimated_cost NUMERIC(10, 2) NOT NULL,
