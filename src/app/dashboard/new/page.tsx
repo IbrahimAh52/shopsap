@@ -13,10 +13,14 @@ import {
   WifiOff, 
   AlertTriangle,
   Sun,
-  Moon
+  Moon,
+  QrCode,
+  Sparkles,
+  AlertCircle
 } from 'lucide-react';
 import { db, isSupabaseConfigured, generateUUID } from '@/lib/db';
 import { offlineQueue } from '@/lib/offline-queue';
+import { auth } from '@/lib/auth';
 
 const CAR_MAKES_AND_MODELS: Record<string, string[]> = {
   Ford: ['F-150', 'Escape', 'Explorer', 'Focus', 'Mustang', 'Fusion', 'Edge', 'Super Duty'],
@@ -76,6 +80,27 @@ function NewInspectionForm() {
   const [repairName, setRepairName] = useState<string>('');
   const [estimatedCost, setEstimatedCost] = useState<string>('');
   const [urgency, setUrgency] = useState<'URGENT' | 'RECOMMENDED' | 'MONITOR'>('RECOMMENDED');
+  const [isScannerOpen, setIsScannerOpen] = useState<boolean>(false);
+  const [authLoading, setAuthLoading] = useState<boolean>(true);
+
+  // Verify user is authenticated
+  useEffect(() => {
+    let active = true;
+    async function checkAuth() {
+      const user = await auth.getCurrentUser();
+      if (!user) {
+        router.push('/login');
+      } else {
+        if (active) {
+          setAuthLoading(false);
+        }
+      }
+    }
+    checkAuth();
+    return () => {
+      active = false;
+    };
+  }, [router]);
 
   // Pre-fill if loading from queue
   useEffect(() => {
@@ -350,6 +375,15 @@ function NewInspectionForm() {
     }
   };
 
+  if (authLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#070b13] text-gray-400">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-2" />
+        <span className="text-sm">Verifying Advisor Session...</span>
+      </div>
+    );
+  }
+
   return (
     <div className={`flex flex-col flex-1 min-h-screen pb-16 transition-colors duration-200 ${
       isDark ? 'bg-[#070b13] text-gray-100' : 'bg-gray-50 text-gray-900'
@@ -461,6 +495,28 @@ function NewInspectionForm() {
             isDark ? 'bg-gray-900/20 border-gray-850' : 'bg-white border-gray-250 shadow-xs'
           }`}>
             
+            {/* Scan VIN Action Bar */}
+            <div className={`flex items-center justify-between pb-3 border-b border-dashed ${
+              isDark ? 'border-gray-800' : 'border-gray-200'
+            }`}>
+              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-blue-500">
+                <Sparkles className="w-3.5 h-3.5 text-blue-500 animate-pulse" />
+                <span>Vehicle Information</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsScannerOpen(true)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-sm border ${
+                  isDark
+                    ? 'bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border-blue-500/25'
+                    : 'bg-blue-50 hover:bg-blue-100 text-blue-600 border-blue-200'
+                }`}
+              >
+                <QrCode className="w-3.5 h-3.5" />
+                Scan VIN Code
+              </button>
+            </div>
+
             {/* Vehicle Year, Make, Model Grid */}
             <div className="grid grid-cols-3 gap-2">
               <div>
@@ -693,6 +749,519 @@ function NewInspectionForm() {
           </button>
         </form>
       </main>
+
+      {/* VIN Scanner Modal Component */}
+      {isScannerOpen && (
+        <VinScannerModal
+          isOpen={isScannerOpen}
+          onClose={() => setIsScannerOpen(false)}
+          onDecode={(year, make, model) => {
+            setVehicleYear(year);
+            // Handle make dropdown vs manual input
+            if (CAR_MAKES_AND_MODELS[make]) {
+              setIsOtherMake(false);
+              setVehicleMake(make);
+            } else {
+              setIsOtherMake(true);
+              setVehicleMake(make);
+            }
+            // Handle model dropdown vs manual input
+            if (CAR_MAKES_AND_MODELS[make]?.includes(model)) {
+              setIsOtherModel(false);
+              setVehicleModel(model);
+            } else {
+              setIsOtherModel(true);
+              setVehicleModel(model);
+            }
+            setIsScannerOpen(false);
+          }}
+          isDark={isDark}
+        />
+      )}
+    </div>
+  );
+}
+
+// ==========================================
+// VIN SCANNER MODAL COMPONENT & UTILS
+// ==========================================
+
+interface VinScannerModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onDecode: (year: string, make: string, model: string) => void;
+  isDark: boolean;
+}
+
+const OFFLINE_DEMO_VEHICLES: Record<string, { year: string; make: string; model: string }> = {
+  '1FTFW1ED4MFD00001': { year: '2021', make: 'Ford', model: 'F-150' },
+  '4T1B11HK5LU010001': { year: '2020', make: 'Toyota', model: 'Camry' },
+  '1HGCV1F13KA010001': { year: '2019', make: 'Honda', model: 'Accord' },
+  '1GCUYDED2N1100001': { year: '2022', make: 'Chevrolet', model: 'Silverado' },
+  '1C4HJXDG9JW100001': { year: '2018', make: 'Jeep', model: 'Wrangler' }
+};
+
+function VinScannerModal({ isOpen, onClose, onDecode, isDark }: VinScannerModalProps) {
+  const [activeTab, setActiveTab] = useState<'camera' | 'manual'>('camera');
+  const [manualVin, setManualVin] = useState('');
+  const [isDecoding, setIsDecoding] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  
+  // Camera States
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [hasCameraPermission, setHasCameraPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt');
+  
+  // Simulated Scan States
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [simulatedProgress, setSimulatedProgress] = useState(0);
+  const [simulatedTarget, setSimulatedTarget] = useState<string | null>(null);
+  const [ocrTextFound, setOcrTextFound] = useState<string | null>(null);
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Play dynamic synth chime
+  const playSuccessBeep = () => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const playTone = (freq: number, start: number, duration: number) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, start);
+        gain.gain.setValueAtTime(0, start);
+        gain.gain.linearRampToValueAtTime(0.08, start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+        osc.start(start);
+        osc.stop(start + duration);
+      };
+      const now = audioCtx.currentTime;
+      playTone(523.25, now, 0.12); // C5
+      playTone(659.25, now + 0.1, 0.2); // E5
+    } catch (err) {
+      console.error('Failed to play audio chime:', err);
+    }
+  };
+
+  // Stop video stream
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+  };
+
+  // Start webcam
+  useEffect(() => {
+    if (activeTab !== 'camera' || !isOpen) {
+      stopCamera();
+      return;
+    }
+
+    let activeStream: MediaStream | null = null;
+
+    async function initCamera() {
+      try {
+        const constraints = {
+          video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
+        };
+        const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        activeStream = mediaStream;
+        setStream(mediaStream);
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+        }
+        setHasCameraPermission('granted');
+      } catch (err) {
+        console.error('Camera access failed:', err);
+        setHasCameraPermission('denied');
+      }
+    }
+
+    initCamera();
+
+    return () => {
+      if (activeStream) {
+        activeStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [activeTab, isOpen]);
+
+  // Decode handler
+  const handleDecode = async (vin: string) => {
+    const cleanVin = vin.trim().toUpperCase();
+    if (cleanVin.length !== 17) {
+      setErrorMsg('VIN must be exactly 17 characters long.');
+      return;
+    }
+    
+    setIsDecoding(true);
+    setErrorMsg(null);
+
+    try {
+      // 1. Try public government API
+      const res = await fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/decodevinvaluesextended/${cleanVin}?format=json`);
+      if (!res.ok) throw new Error('API request failed');
+      const data = await res.json();
+      const result = data.Results?.[0];
+      
+      if (result && result.Make && result.ModelYear) {
+        const year = result.ModelYear.toString();
+        // Capitalize make
+        const make = result.Make.charAt(0).toUpperCase() + result.Make.slice(1).toLowerCase();
+        const model = result.Model ? (result.Model.charAt(0).toUpperCase() + result.Model.slice(1).toLowerCase()) : 'Unknown';
+        
+        playSuccessBeep();
+        onDecode(year, make, model);
+        return;
+      }
+      
+      // 2. If API fails to return valid result, try offline dictionary
+      if (OFFLINE_DEMO_VEHICLES[cleanVin]) {
+        const vehicle = OFFLINE_DEMO_VEHICLES[cleanVin];
+        playSuccessBeep();
+        onDecode(vehicle.year, vehicle.make, vehicle.model);
+        return;
+      }
+
+      // 3. Fallback generic year code extraction from 10th digit
+      const tenthChar = cleanVin.charAt(9);
+      const vinYears: Record<string, string> = {
+        'A': '2010', 'B': '2011', 'C': '2012', 'D': '2013', 'E': '2014',
+        'F': '2015', 'G': '2016', 'H': '2017', 'J': '2018', 'K': '2019',
+        'L': '2020', 'M': '2021', 'N': '2022', 'P': '2023', 'R': '2024',
+        'S': '2025', 'T': '2026', 'V': '2027', 'W': '2028', 'X': '2029', 'Y': '2030'
+      };
+      const year = vinYears[tenthChar];
+      if (year) {
+        playSuccessBeep();
+        onDecode(year, 'Decoded Vehicle', 'Model (Verify manual)');
+        return;
+      }
+
+      throw new Error('This VIN could not be decoded. Please enter details manually.');
+    } catch (err: any) {
+      console.error('Error decoding VIN:', err);
+      // Last-second fallback if completely offline but matching demo
+      if (OFFLINE_DEMO_VEHICLES[cleanVin]) {
+        const vehicle = OFFLINE_DEMO_VEHICLES[cleanVin];
+        playSuccessBeep();
+        onDecode(vehicle.year, vehicle.make, vehicle.model);
+        return;
+      }
+      setErrorMsg(err.message || 'Network error: could not decode VIN.');
+    } finally {
+      setIsDecoding(false);
+    }
+  };
+
+  // Simulate scanning of demo vehicle
+  const handleSimulateScan = (vin: string) => {
+    if (isSimulating) return;
+    setIsSimulating(true);
+    setSimulatedTarget(vin);
+    setSimulatedProgress(0);
+    setErrorMsg(null);
+    setOcrTextFound(null);
+
+    // Make sure we have permission/webcam showing
+    if (hasCameraPermission !== 'granted') {
+      setHasCameraPermission('granted');
+    }
+
+    const interval = setInterval(() => {
+      setSimulatedProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setOcrTextFound(vin);
+          setTimeout(() => {
+            handleDecode(vin);
+            setIsSimulating(false);
+            setSimulatedTarget(null);
+          }, 600);
+          return 100;
+        }
+        return prev + 10;
+      });
+    }, 120);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+      <style>{`
+        @keyframes scan-laser {
+          0% { top: 0%; }
+          50% { top: 100%; }
+          100% { top: 0%; }
+        }
+        @keyframes pulse-glow {
+          0%, 100% { opacity: 0.5; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.02); }
+        }
+        .animate-laser {
+          animation: scan-laser 2.5s infinite linear;
+        }
+        .animate-glow {
+          animation: pulse-glow 2s infinite ease-in-out;
+        }
+      `}</style>
+
+      <div className={`w-full max-w-md overflow-hidden rounded-2xl border shadow-2xl flex flex-col ${
+        isDark ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-200 text-gray-900'
+      }`}>
+        {/* Modal Header */}
+        <div className={`px-4 py-3 border-b flex items-center justify-between ${
+          isDark ? 'border-gray-800 bg-gray-950/60' : 'border-gray-150 bg-gray-50'
+        }`}>
+          <div className="flex items-center gap-2">
+            <QrCode className="w-5 h-5 text-blue-500" />
+            <h3 className="font-bold text-sm">Vehicle VIN Scanner</h3>
+          </div>
+          <button 
+            type="button" 
+            onClick={() => {
+              stopCamera();
+              onClose();
+            }} 
+            className={`p-1.5 rounded-lg text-xs font-semibold hover:bg-gray-700/20 transition-colors ${
+              isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'
+            }`}
+          >
+            Cancel
+          </button>
+        </div>
+
+        {/* Tabs switcher */}
+        <div className={`grid grid-cols-2 text-xs border-b ${
+          isDark ? 'border-gray-800 bg-gray-950/30' : 'border-gray-150 bg-gray-50/50'
+        }`}>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('camera');
+              setErrorMsg(null);
+            }}
+            className={`py-3 font-bold border-b-2 transition-all ${
+              activeTab === 'camera' 
+                ? 'border-blue-500 text-blue-500 bg-blue-500/[0.02]' 
+                : 'border-transparent text-gray-500 hover:text-gray-750'
+            }`}
+          >
+            Camera Scanner
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('manual');
+              stopCamera();
+              setErrorMsg(null);
+            }}
+            className={`py-3 font-bold border-b-2 transition-all ${
+              activeTab === 'manual' 
+                ? 'border-blue-500 text-blue-500 bg-blue-500/[0.02]' 
+                : 'border-transparent text-gray-500 hover:text-gray-750'
+            }`}
+          >
+            Manual VIN Decode
+          </button>
+        </div>
+
+        {/* Scanner Content */}
+        <div className="p-4 flex-1 flex flex-col min-h-[300px]">
+          
+          {activeTab === 'camera' && (
+            <div className="space-y-4 flex-1 flex flex-col">
+              
+              {/* Viewfinder area */}
+              <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-black border border-gray-800 shadow-inner flex flex-col items-center justify-center">
+                {hasCameraPermission === 'granted' ? (
+                  <>
+                    <video 
+                      ref={videoRef}
+                      autoPlay 
+                      playsInline 
+                      muted 
+                      className="absolute inset-0 w-full h-full object-cover opacity-70"
+                    />
+                    
+                    {/* Visual Scan Box & Laser Overlay */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="relative w-4/5 h-1/3 border-2 border-dashed border-emerald-400/80 rounded-lg flex items-center justify-center shadow-[0_0_20px_rgba(52,211,153,0.15)] animate-glow">
+                        
+                        {/* Laser line animation */}
+                        <div className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-laser" />
+                        
+                        {/* Status label inside */}
+                        <span className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-400 bg-black/70 px-2 py-0.5 rounded border border-emerald-500/20">
+                          {isSimulating ? `Scanning... ${simulatedProgress}%` : 'Align VIN Text / Barcode'}
+                        </span>
+
+                        {/* Corner markers */}
+                        <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-emerald-400 rounded-tl" />
+                        <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-emerald-400 rounded-tr" />
+                        <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-emerald-400 rounded-bl" />
+                        <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-emerald-400 rounded-br" />
+                      </div>
+                    </div>
+
+                    {/* Simulated bounding box of text capture */}
+                    {ocrTextFound && (
+                      <div className="absolute w-4/5 h-1/10 bg-blue-500/20 border border-blue-500 rounded flex items-center justify-center animate-pulse">
+                        <span className="font-mono text-xs font-bold text-white tracking-widest">{ocrTextFound}</span>
+                      </div>
+                    )}
+                  </>
+                ) : hasCameraPermission === 'denied' ? (
+                  <div className="p-4 text-center space-y-2">
+                    <AlertCircle className="w-8 h-8 text-amber-500 mx-auto" />
+                    <p className="text-xs font-semibold text-gray-400">Camera permission was denied.</p>
+                    <p className="text-[10px] text-gray-500">Please enable camera access in your settings, or use the Manual VIN tab.</p>
+                  </div>
+                ) : (
+                  <div className="p-4 text-center space-y-3">
+                    <Loader2 className="w-6 h-6 text-blue-500 animate-spin mx-auto" />
+                    <p className="text-xs font-medium text-gray-400">Initializing camera stream...</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Quick demo scanner trigger buttons */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Quick Test Simulation
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    type="button"
+                    disabled={isSimulating}
+                    onClick={() => handleSimulateScan('1FTFW1ED4MFD00001')}
+                    className={`h-9 px-2 rounded-xl text-[10px] font-bold border text-left flex items-center justify-between transition-all active:scale-[0.98] ${
+                      isDark 
+                        ? 'bg-gray-800/40 hover:bg-gray-800 border-gray-700 text-gray-300' 
+                        : 'bg-gray-50 hover:bg-gray-100 border-gray-300 text-gray-755'
+                    }`}
+                  >
+                    <span>🚙 Ford F-150</span>
+                    <span className="text-[9px] font-mono text-gray-500">2021 VIN</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isSimulating}
+                    onClick={() => handleSimulateScan('4T1B11HK5LU010001')}
+                    className={`h-9 px-2 rounded-xl text-[10px] font-bold border text-left flex items-center justify-between transition-all active:scale-[0.98] ${
+                      isDark 
+                        ? 'bg-gray-800/40 hover:bg-gray-800 border-gray-700 text-gray-300' 
+                        : 'bg-gray-50 hover:bg-gray-100 border-gray-300 text-gray-755'
+                    }`}
+                  >
+                    <span>🚗 Toyota Camry</span>
+                    <span className="text-[9px] font-mono text-gray-500">2020 VIN</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isSimulating}
+                    onClick={() => handleSimulateScan('1HGCV1F13KA010001')}
+                    className={`h-9 px-2 rounded-xl text-[10px] font-bold border text-left flex items-center justify-between transition-all active:scale-[0.98] ${
+                      isDark 
+                        ? 'bg-gray-800/40 hover:bg-gray-800 border-gray-700 text-gray-300' 
+                        : 'bg-gray-50 hover:bg-gray-100 border-gray-300 text-gray-755'
+                    }`}
+                  >
+                    <span>🚗 Honda Accord</span>
+                    <span className="text-[9px] font-mono text-gray-500">2019 VIN</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isSimulating}
+                    onClick={() => handleSimulateScan('1C4HJXDG9JW100001')}
+                    className={`h-9 px-2 rounded-xl text-[10px] font-bold border text-left flex items-center justify-between transition-all active:scale-[0.98] ${
+                      isDark 
+                        ? 'bg-gray-800/40 hover:bg-gray-800 border-gray-700 text-gray-300' 
+                        : 'bg-gray-50 hover:bg-gray-100 border-gray-300 text-gray-755'
+                    }`}
+                  >
+                    <span>🚙 Jeep Wrangler</span>
+                    <span className="text-[9px] font-mono text-gray-500">2018 VIN</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'manual' && (
+            <div className="space-y-4 flex-1 flex flex-col justify-center">
+              <div className="space-y-2">
+                <label className={`block text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Enter 17-Digit VIN Code
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    maxLength={17}
+                    placeholder="e.g. 1FTFW1ED4MFD00001"
+                    value={manualVin}
+                    onChange={(e) => setManualVin(e.target.value.replace(/[^a-zA-Z0-9]/g, ''))}
+                    className={`flex-1 h-12 px-3 rounded-xl border focus:border-blue-500 focus:outline-none font-mono text-sm uppercase tracking-widest ${
+                      isDark 
+                        ? 'bg-gray-955 border-gray-800 text-white' 
+                        : 'bg-gray-50 border-gray-300 text-gray-900'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    disabled={isDecoding || manualVin.length !== 17}
+                    onClick={() => handleDecode(manualVin)}
+                    className="h-12 px-4 rounded-xl bg-blue-600 hover:bg-blue-750 text-white font-bold text-xs transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none flex items-center gap-1.5 shadow-sm border border-blue-500/20"
+                  >
+                    {isDecoding && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                    Decode
+                  </button>
+                </div>
+                <p className="text-[10px] text-gray-500 leading-normal">
+                  Decodes using NHTSA database to fill Year, Make, and Model details automatically.
+                </p>
+              </div>
+
+              {/* Demo examples helper for copy-paste test */}
+              <div className={`p-3 rounded-xl border text-xs space-y-2 ${
+                isDark ? 'bg-gray-950/40 border-gray-800/60' : 'bg-gray-50 border-gray-200'
+              }`}>
+                <span className="font-semibold block text-[10px] text-gray-500 uppercase">Test VIN Examples to Copy:</span>
+                <div className="space-y-1.5 font-mono text-[10.5px]">
+                  <div className="flex justify-between items-center bg-gray-500/5 px-2 py-1 rounded">
+                    <span>Ford F-150: <strong className="text-blue-500 select-all">1FTFW1ED4MFD00001</strong></span>
+                  </div>
+                  <div className="flex justify-between items-center bg-gray-500/5 px-2 py-1 rounded">
+                    <span>Toyota Camry: <strong className="text-blue-500 select-all">4T1B11HK5LU010001</strong></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Decoding Status / Error Display */}
+          {isDecoding && activeTab === 'manual' && (
+            <div className="mt-3 p-3 rounded-xl bg-blue-500/5 border border-blue-500/20 text-blue-400 text-xs flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+              <span>Querying NHTSA Government Database...</span>
+            </div>
+          )}
+
+          {errorMsg && (
+            <div className="mt-3 p-3 rounded-xl bg-red-500/5 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+        </div>
+      </div>
     </div>
   );
 }

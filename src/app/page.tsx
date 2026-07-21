@@ -11,7 +11,8 @@ import {
   UserCheck, 
   ArrowRight,
   ShieldCheck,
-  ChevronRight
+  ChevronRight,
+  Settings
 } from 'lucide-react';
 
 export default function Home() {
@@ -37,9 +38,15 @@ export default function Home() {
       
       {/* Navigation */}
       <header className="border-b border-slate-100 px-6 py-5 max-w-7xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
+          <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-650 flex items-center justify-center text-white shadow-md shadow-blue-500/10">
+            <Settings className="w-5 h-5 animate-[spin_10s_linear_infinite]" />
+            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border border-white flex items-center justify-center text-white">
+              <Check className="w-2.5 h-2.5 stroke-[3.5]" />
+            </div>
+          </div>
           <span className="text-xl font-bold tracking-tight text-slate-900">ShopSnap</span>
-        </div>
+        </Link>
 
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
           <a href="#how-it-works" className="hover:text-slate-900 transition-colors">How it works</a>
@@ -50,16 +57,10 @@ export default function Home() {
 
         <div className="flex items-center gap-3">
           <Link 
-            href="/dashboard" 
-            className="px-4 py-2 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors"
-          >
-            Advisor Portal
-          </Link>
-          <Link 
-            href="/dashboard/new" 
+            href="/login" 
             className="px-4 py-2 text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition-colors"
           >
-            New Inspection
+            Sign In
           </Link>
         </div>
       </header>
@@ -147,7 +148,7 @@ export default function Home() {
             <div className="border-t border-slate-100 pt-3 flex flex-col gap-2">
               <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Approved by Client:</div>
               <div className="h-10 bg-slate-50 border border-slate-200 rounded-lg px-3 flex items-center justify-between text-xs italic font-serif text-slate-700">
-                <span>Jane Doe</span>
+                <span>A. Customer (Digital Sign)</span>
                 <span className="text-[9px] font-sans font-bold not-italic bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-100">
                   SIGNED DIGITAL AUTH
                 </span>

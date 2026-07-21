@@ -50,51 +50,7 @@ export function generateUUID(): string {
 // Mock database store for local fallback when Supabase is not configured
 const MOCK_STORAGE_KEY = 'shopsnap_mock_inspections';
 
-const initialMocks: Inspection[] = [
-  {
-    id: 'f3b8b1b1-21c6-4b2a-8742-df2de3507001',
-    vehicleYear: 2018,
-    vehicleMake: 'Ford',
-    vehicleModel: 'F-150',
-    customerPhone: '555-0199',
-    repairName: 'Front Brake Pads & Rotor Replacement',
-    estimatedCost: 450.00,
-    urgency: 'URGENT',
-    status: 'SENT',
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-mechanic-working-on-a-car-engine-40898-large.mp4',
-    createdAt: new Date(Date.now() - 4 * 3600 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 4 * 3600 * 1000).toISOString(),
-  },
-  {
-    id: 'a9b2c3d4-e5f6-4a5b-9c8d-7e6f5a4b3c2d',
-    vehicleYear: 2020,
-    vehicleMake: 'Toyota',
-    vehicleModel: 'RAV4',
-    customerPhone: '555-0144',
-    repairName: 'Cabin & Engine Air Filters Replacement',
-    estimatedCost: 85.00,
-    urgency: 'RECOMMENDED',
-    status: 'AWAITING_INSPECTION',
-    createdAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
-  },
-  {
-    id: 'e8d7c6b5-a493-4210-9876-54321abcdef0',
-    vehicleYear: 2015,
-    vehicleMake: 'Honda',
-    vehicleModel: 'Civic',
-    customerPhone: '555-0122',
-    repairName: 'Serpentine Belt Replacement',
-    estimatedCost: 180.00,
-    urgency: 'URGENT',
-    status: 'APPROVED',
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-car-mechanic-hands-using-a-wrench-40900-large.mp4',
-    signature: 'Jane Doe',
-    approvedAt: new Date(Date.now() - 1 * 3600 * 1000).toISOString(),
-    createdAt: new Date(Date.now() - 5 * 3600 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 1 * 3600 * 1000).toISOString(),
-  }
-];
+const initialMocks: Inspection[] = [];
 
 // Helper to interact with Mock database (LocalStorage client-side, In-memory server-side fallback)
 let serverMemoryMocks = [...initialMocks];

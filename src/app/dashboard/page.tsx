@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { 
   Plus, 
   Wrench, 
@@ -22,18 +23,27 @@ import {
   Check,
   ClipboardCheck,
   UserCheck,
-  Camera
+  Camera,
+  LogOut,
+  Loader2,
+  Settings
 } from 'lucide-react';
 import { db, Inspection, isSupabaseConfigured } from '@/lib/db';
 import { offlineQueue } from '@/lib/offline-queue';
+import { auth, UserSession } from '@/lib/auth';
 
 export default function MechanicDashboard() {
+  const router = useRouter();
   const [inspections, setInspections] = useState<Inspection[]>([]);
   const [offlineCount, setOfflineCount] = useState<number>(0);
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [syncing, setSyncing] = useState<boolean>(false);
   const [syncMessage, setSyncMessage] = useState<string>('');
   const [lastSmsMessage, setLastSmsMessage] = useState<{ id: string; phone: string; text: string } | null>(null);
+
+  // Auth States
+  const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
+  const [authLoading, setAuthLoading] = useState<boolean>(true);
 
   // Theme state: defaults to dark (true) for greasy hands / bays
   const [isDark, setIsDark] = useState<boolean>(true);
@@ -57,6 +67,27 @@ export default function MechanicDashboard() {
       console.error('Error loading dashboard data:', err);
     }
   };
+
+  // Verify user is authenticated
+  useEffect(() => {
+    let active = true;
+    async function checkAuth() {
+      const user = await auth.getCurrentUser();
+      if (!user) {
+        router.push('/login');
+      } else {
+        if (active) {
+          setCurrentUser(user);
+          setAdvisorName(user.name);
+          setAuthLoading(false);
+        }
+      }
+    }
+    checkAuth();
+    return () => {
+      active = false;
+    };
+  }, [router]);
 
   // Check network and theme settings
   useEffect(() => {
@@ -263,6 +294,15 @@ export default function MechanicDashboard() {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
   };
 
+  if (authLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#070b13] text-gray-400">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-2" />
+        <span className="text-sm">Verifying Advisor Session...</span>
+      </div>
+    );
+  }
+
   return (
     <div className={`flex flex-col flex-1 min-h-screen pb-24 transition-colors duration-200 ${
       isDark ? 'bg-[#070b13] text-gray-100' : 'bg-gray-50 text-gray-900'
@@ -271,19 +311,25 @@ export default function MechanicDashboard() {
       <header className={`sticky top-0 z-40 px-4 pb-3 pt-safe flex items-center justify-between border-b transition-colors duration-200 ${
         isDark ? 'bg-[#0e1726]/90 border-gray-855/80 backdrop-blur' : 'bg-white border-gray-250/80 shadow-xs'
       }`}>
-        <div className="flex flex-col">
-          <h1 className={`text-2xl font-black tracking-tight ${
-            isDark 
-              ? 'text-white bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent' 
-              : 'text-gray-900'
-          }`}>
-            ShopSnap
-          </h1>
-          <p className={`text-[9px] font-bold uppercase tracking-widest mt-0.5 ${
-            isDark ? 'text-gray-500' : 'text-gray-400'
-          }`}>
-            Mechanic Portal
-          </p>
+        <div className="flex items-center gap-2">
+          <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-650 flex items-center justify-center text-white shadow-md shadow-blue-500/10">
+            <Settings className="w-5 h-5 animate-[spin_10s_linear_infinite]" />
+            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border border-white flex items-center justify-center text-white">
+              <Check className="w-2.5 h-2.5 stroke-[3.5]" />
+            </div>
+          </div>
+          <div className="flex flex-col">
+            <h1 className={`text-xl font-extrabold tracking-tight leading-none ${
+              isDark ? 'text-white' : 'text-slate-900'
+            }`}>
+              ShopSnap
+            </h1>
+            <p className={`text-[9px] font-bold uppercase tracking-widest mt-0.5 ${
+              isDark ? 'text-gray-455 font-medium' : 'text-gray-500'
+            }`}>
+              Advisor: <span className={isDark ? 'text-blue-400 font-bold' : 'text-blue-600 font-extrabold'}>{currentUser?.name}</span>
+            </p>
+          </div>
         </div>
 
         {/* Action controls */}
@@ -294,11 +340,28 @@ export default function MechanicDashboard() {
             className={`p-2 rounded-xl border transition-colors ${
               isDark 
                 ? 'bg-gray-800/40 border-gray-700 text-gray-300 hover:text-white' 
-                : 'bg-gray-100 border-gray-305 text-gray-605 hover:text-gray-900 hover:bg-gray-200'
+                : 'bg-gray-100 border-gray-305 text-gray-605 hover:text-gray-900 hover:bg-gray-250'
             }`}
             aria-label="Toggle theme"
           >
             {isDark ? <Sun className="w-4 h-4 text-yellow-450" /> : <Moon className="w-4 h-4" />}
+          </button>
+
+          {/* Logout Button */}
+          <button
+            onClick={async () => {
+              await auth.logout();
+              router.push('/login');
+            }}
+            className={`p-2 rounded-xl border transition-colors ${
+              isDark 
+                ? 'bg-gray-800/40 border-gray-700 text-red-400 hover:text-red-300 hover:bg-red-500/10' 
+                : 'bg-gray-100 border-gray-305 text-red-650 hover:text-red-700 hover:bg-red-50'
+            }`}
+            title="Log Out"
+            aria-label="Log Out"
+          >
+            <LogOut className="w-4 h-4" />
           </button>
 
           {offlineCount > 0 && (
