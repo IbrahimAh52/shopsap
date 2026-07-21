@@ -181,7 +181,7 @@ export const db = {
 
     if (isSupabaseConfigured && supabase) {
       try {
-        // Try direct insert with custom columns
+        // 1. Try clean insert with custom columns assuming they exist
         const { data, error } = await supabase
           .from('inspections')
           .insert([{
@@ -206,44 +206,38 @@ export const db = {
         if (error) throw error;
         return decodeInspection(data);
       } catch (err: any) {
-        // Fallback: If custom columns are missing, pack them in repair_name
-        if (
-          err.message?.includes('column "') || 
-          err.hint?.includes('column "')
-        ) {
-          let packedRepairName = newRecord.repairName;
-          if (newRecord.vin) {
-            packedRepairName = `${packedRepairName} [VIN:${newRecord.vin}]`;
-          }
-          if (newRecord.advisorName) {
-            packedRepairName = `${packedRepairName} [ADVISOR:${newRecord.advisorName}]`;
-          }
-          if (newRecord.advisorEmail) {
-            packedRepairName = `${packedRepairName} [EMAIL:${newRecord.advisorEmail}]`;
-          }
+        console.warn('Direct insert failed, attempting packed fallback:', err);
+        
+        // 2. Try fallback: Pack all custom fields inside repair_name and use baseline columns
+        const packedParts = [
+          newRecord.repairName,
+          newRecord.vin ? `[VIN:${newRecord.vin}]` : '',
+          newRecord.advisorName ? `[ADVISOR:${newRecord.advisorName}]` : '',
+          newRecord.advisorEmail ? `[EMAIL:${newRecord.advisorEmail}]` : '',
+        ].filter(Boolean);
+
+        const packedRepairName = packedParts.join(' ');
             
-          const { data, error } = await supabase
-            .from('inspections')
-            .insert([{
-              id: newRecord.id,
-              vehicle_year: newRecord.vehicleYear,
-              vehicle_make: newRecord.vehicleMake,
-              vehicle_model: newRecord.vehicleModel,
-              customer_phone: newRecord.customerPhone,
-              repair_name: packedRepairName,
-              estimated_cost: newRecord.estimatedCost,
-              urgency: newRecord.urgency,
-              status: newRecord.status === 'ARCHIVED' ? 'APPROVED' : newRecord.status,
-              video_url: newRecord.videoUrl,
-              signature: newRecord.signature,
-              approved_at: newRecord.approvedAt,
-            }])
-            .select()
-            .single();
-          if (error) throw error;
-          return decodeInspection(data);
-        }
-        throw err;
+        const { data, error } = await supabase
+          .from('inspections')
+          .insert([{
+            id: newRecord.id,
+            vehicle_year: newRecord.vehicleYear,
+            vehicle_make: newRecord.vehicleMake,
+            vehicle_model: newRecord.vehicleModel,
+            customer_phone: newRecord.customerPhone,
+            repair_name: packedRepairName,
+            estimated_cost: newRecord.estimatedCost,
+            urgency: newRecord.urgency,
+            status: newRecord.status === 'ARCHIVED' ? 'APPROVED' : newRecord.status,
+            video_url: newRecord.videoUrl,
+            signature: newRecord.signature,
+            approved_at: newRecord.approvedAt,
+          }])
+          .select()
+          .single();
+        if (error) throw error;
+        return decodeInspection(data);
       }
     }
 
@@ -277,6 +271,7 @@ export const db = {
 
     if (isSupabaseConfigured && supabase) {
       try {
+        // 1. Try direct update
         const dbUpdates: any = { updated_at: now };
         if (updates.vehicleYear !== undefined) dbUpdates.vehicle_year = updates.vehicleYear;
         if (updates.vehicleMake !== undefined) dbUpdates.vehicle_make = updates.vehicleMake;
@@ -303,11 +298,10 @@ export const db = {
         if (error) throw error;
         return decodeInspection(data);
       } catch (err: any) {
-        // Fallback: If custom columns are missing, pack them in repair_name
-        if (
-          err.message?.includes('column "') || 
-          err.hint?.includes('column "')
-        ) {
+        console.warn('Direct update failed, attempting packed fallback:', err);
+        
+        // 2. Try fallback: Pack updates inside repair_name
+        try {
           const dbUpdates: any = { updated_at: now };
           if (updates.vehicleYear !== undefined) dbUpdates.vehicle_year = updates.vehicleYear;
           if (updates.vehicleMake !== undefined) dbUpdates.vehicle_make = updates.vehicleMake;
@@ -327,23 +321,18 @@ export const db = {
           const targetAdvName = updates.advisorName !== undefined ? updates.advisorName : current.advisorName;
           const targetAdvEmail = updates.advisorEmail !== undefined ? updates.advisorEmail : current.advisorEmail;
           
-          let packedRepairName = baseRepairName;
-          // Strip out old tags to avoid duplication
-          packedRepairName = packedRepairName
+          let cleanRepairName = baseRepairName
             .replace(/\s\[VIN:[A-Z0-9]{17}\]/i, '')
             .replace(/\s\[ADVISOR:[^\]]+\]/i, '')
-            .replace(/\s\[EMAIL:[^\]]+\]/i, '');
+            .replace(/\s\[EMAIL:[^\]]+\]/i, '')
+            .trim();
 
-          if (targetVin) {
-            packedRepairName = `${packedRepairName} [VIN:${targetVin}]`;
-          }
-          if (targetAdvName) {
-            packedRepairName = `${packedRepairName} [ADVISOR:${targetAdvName}]`;
-          }
-          if (targetAdvEmail) {
-            packedRepairName = `${packedRepairName} [EMAIL:${targetAdvEmail}]`;
-          }
-          dbUpdates.repair_name = packedRepairName;
+          const packedParts = [cleanRepairName];
+          if (targetVin) packedParts.push(`[VIN:${targetVin}]`);
+          if (targetAdvName) packedParts.push(`[ADVISOR:${targetAdvName}]`);
+          if (targetAdvEmail) packedParts.push(`[EMAIL:${targetAdvEmail}]`);
+
+          dbUpdates.repair_name = packedParts.filter(Boolean).join(' ');
 
           const { data, error } = await supabase
             .from('inspections')
@@ -353,8 +342,9 @@ export const db = {
             .single();
           if (error) throw error;
           return decodeInspection(data);
+        } catch (fallbackErr) {
+          throw fallbackErr;
         }
-        throw err;
       }
     }
 
