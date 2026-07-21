@@ -1112,20 +1112,23 @@ function VinScannerModal({ isOpen, onClose, onDecode, isDark }: VinScannerModalP
               
               {/* Viewfinder area */}
               <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-black border border-gray-800 shadow-inner flex flex-col items-center justify-center">
-                {hasCameraPermission === 'granted' ? (
+                {/* Video element is ALWAYS rendered so the ref is always bound on mount */}
+                <video 
+                  ref={videoRef}
+                  autoPlay 
+                  playsInline 
+                  muted 
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                    hasCameraPermission === 'granted' ? 'opacity-70' : 'opacity-0'
+                  }`}
+                />
+
+                {/* Overlays on top of the video */}
+                {hasCameraPermission === 'granted' && (
                   <>
-                    <video 
-                      ref={videoRef}
-                      autoPlay 
-                      playsInline 
-                      muted 
-                      className="absolute inset-0 w-full h-full object-cover opacity-70"
-                    />
-                    
                     {/* Visual Scan Box & Laser Overlay */}
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="relative w-4/5 h-1/3 border-2 border-dashed border-emerald-400/80 rounded-lg flex items-center justify-center shadow-[0_0_20px_rgba(52,211,153,0.15)] animate-glow">
-                        
                         {/* Laser line animation */}
                         <div className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-laser" />
                         
@@ -1149,14 +1152,18 @@ function VinScannerModal({ isOpen, onClose, onDecode, isDark }: VinScannerModalP
                       </div>
                     )}
                   </>
-                ) : hasCameraPermission === 'denied' ? (
-                  <div className="p-4 text-center space-y-2">
+                )}
+
+                {hasCameraPermission === 'denied' && (
+                  <div className="absolute inset-0 bg-black/90 p-4 flex flex-col items-center justify-center text-center space-y-2 z-10">
                     <AlertCircle className="w-8 h-8 text-amber-500 mx-auto" />
                     <p className="text-xs font-semibold text-gray-400">Camera permission was denied.</p>
                     <p className="text-[10px] text-gray-500">Please enable camera access in your settings, or use the Manual VIN tab.</p>
                   </div>
-                ) : (
-                  <div className="p-4 text-center space-y-3">
+                )}
+
+                {hasCameraPermission === 'prompt' && (
+                  <div className="absolute inset-0 bg-black/95 p-4 flex flex-col items-center justify-center text-center space-y-3 z-10">
                     <Loader2 className="w-6 h-6 text-blue-500 animate-spin mx-auto" />
                     <p className="text-xs font-medium text-gray-400">Initializing camera stream...</p>
                   </div>
