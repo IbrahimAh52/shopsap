@@ -40,7 +40,6 @@ export function generateUUID(): string {
   if (typeof window !== 'undefined' && window.crypto && window.crypto.randomUUID) {
     return window.crypto.randomUUID();
   }
-  // Fallback for non-secure contexts
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
     const r = Math.random() * 16 | 0;
     const v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -49,33 +48,54 @@ export function generateUUID(): string {
 }
 
 // Mock database store for local fallback when Supabase is not configured
-const MOCK_STORAGE_KEY = 'shopsnap_mock_inspections';
-
-const initialMocks: Inspection[] = [];
-
-// Helper to interact with Mock database (LocalStorage client-side, In-memory server-side fallback)
-let serverMemoryMocks = [...initialMocks];
-
 function getMockData(): Inspection[] {
-  if (typeof window !== 'undefined') {
-    const data = localStorage.getItem(MOCK_STORAGE_KEY);
-    if (!data) {
-      localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(initialMocks));
-      return initialMocks;
-    }
-    return JSON.parse(data);
-  }
-  return serverMemoryMocks;
+  if (typeof window === 'undefined') return [];
+  const data = localStorage.getItem('shopsnap_mock_inspections');
+  return data ? JSON.parse(data) : [];
 }
 
 function saveMockData(data: Inspection[]) {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(data));
-    // Trigger custom storage event for tab synchronization
-    window.dispatchEvent(new Event('storage_updated'));
-  } else {
-    serverMemoryMocks = data;
+  if (typeof window === 'undefined') return;
+  localStorage.setItem('shopsnap_mock_inspections', JSON.stringify(data));
+}
+
+/**
+ * Decodes a database row (from either Supabase snake_case or LocalStorage camelCase)
+ * and translates signature-prefixed archive markers back into the in-memory 'ARCHIVED' status.
+ */
+function decodeInspection(row: any): Inspection {
+  let status: InspectionStatus = row.status || 'AWAITING_INSPECTION';
+  let signature: string | undefined = row.signature;
+
+  // Handle DB-safe archive prefix decodes
+  if (signature && signature.startsWith('[ARCHIVED_')) {
+    status = 'ARCHIVED';
+    if (signature.startsWith('[ARCHIVED_APPROVED] ')) {
+      signature = signature.replace('[ARCHIVED_APPROVED] ', '');
+    } else if (signature.startsWith('[ARCHIVED_DECLINED]')) {
+      signature = undefined;
+    } else if (signature.startsWith('[ARCHIVED_PENDING]')) {
+      signature = undefined;
+    }
   }
+
+  return {
+    id: row.id,
+    vehicleYear: row.vehicle_year !== undefined ? row.vehicle_year : row.vehicleYear,
+    vehicleMake: row.vehicle_make !== undefined ? row.vehicle_make : row.vehicleMake,
+    vehicleModel: row.vehicle_model !== undefined ? row.vehicle_model : row.vehicleModel,
+    vin: row.vin,
+    customerPhone: row.customer_phone !== undefined ? row.customer_phone : row.customerPhone,
+    repairName: row.repair_name !== undefined ? row.repair_name : row.repairName,
+    estimatedCost: Number(row.estimated_cost !== undefined ? row.estimated_cost : (row.estimatedCost || 0)),
+    urgency: row.urgency,
+    status,
+    videoUrl: row.video_url !== undefined ? row.video_url : row.videoUrl,
+    signature,
+    approvedAt: row.approved_at !== undefined ? row.approved_at : row.approvedAt,
+    createdAt: row.created_at !== undefined ? row.created_at : row.createdAt,
+    updatedAt: row.updated_at !== undefined ? row.updated_at : row.updatedAt,
+  };
 }
 
 export const db = {
@@ -87,26 +107,12 @@ export const db = {
         .order('created_at', { ascending: false });
       if (error) throw error;
       
-      return (data || []).map(row => ({
-        id: row.id,
-        vehicleYear: row.vehicle_year,
-        vehicleMake: row.vehicle_make,
-        vehicleModel: row.vehicle_model,
-        vin: row.vin,
-        customerPhone: row.customer_phone,
-        repairName: row.repair_name,
-        estimatedCost: Number(row.estimated_cost),
-        urgency: row.urgency,
-        status: row.status,
-        videoUrl: row.video_url,
-        signature: row.signature,
-        approvedAt: row.approved_at,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-      }));
+      return (data || []).map(row => decodeInspection(row));
     }
     
-    return getMockData().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    return getMockData()
+      .map(row => decodeInspection(row))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   },
 
   async get(id: string): Promise<Inspection | null> {
@@ -120,27 +126,11 @@ export const db = {
         if (error.code === 'PGRST116') return null; // Not found
         throw error;
       }
-      return {
-        id: data.id,
-        vehicleYear: data.vehicle_year,
-        vehicleMake: data.vehicle_make,
-        vehicleModel: data.vehicle_model,
-        vin: data.vin,
-        customerPhone: data.customer_phone,
-        repairName: data.repair_name,
-        estimatedCost: Number(data.estimated_cost),
-        urgency: data.urgency,
-        status: data.status,
-        videoUrl: data.video_url,
-        signature: data.signature,
-        approvedAt: data.approved_at,
-        createdAt: data.created_at,
-        updatedAt: data.updated_at,
-      };
+      return decodeInspection(data);
     }
     
     const item = getMockData().find(i => i.id === id);
-    return item || null;
+    return item ? decodeInspection(item) : null;
   },
 
   async create(inspection: Omit<Inspection, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): Promise<Inspection> {
@@ -154,6 +144,7 @@ export const db = {
     };
 
     if (isSupabaseConfigured && supabase) {
+      // During creation, status is fresh (never archived initially)
       const { data, error } = await supabase
         .from('inspections')
         .insert([{
@@ -166,7 +157,7 @@ export const db = {
           repair_name: newRecord.repairName,
           estimated_cost: newRecord.estimatedCost,
           urgency: newRecord.urgency,
-          status: newRecord.status,
+          status: newRecord.status === 'ARCHIVED' ? 'APPROVED' : newRecord.status, // Safety boundary
           video_url: newRecord.videoUrl,
           signature: newRecord.signature,
           approved_at: newRecord.approvedAt,
@@ -174,33 +165,38 @@ export const db = {
         .select()
         .single();
       if (error) throw error;
-      return {
-        id: data.id,
-        vehicleYear: data.vehicle_year,
-        vehicleMake: data.vehicle_make,
-        vehicleModel: data.vehicle_model,
-        vin: data.vin,
-        customerPhone: data.customer_phone,
-        repairName: data.repair_name,
-        estimatedCost: Number(data.estimated_cost),
-        urgency: data.urgency,
-        status: data.status,
-        videoUrl: data.video_url,
-        signature: data.signature,
-        approvedAt: data.approved_at,
-        createdAt: data.created_at,
-        updatedAt: data.updated_at,
-      };
+      return decodeInspection(data);
     }
 
     const current = getMockData();
     current.push(newRecord);
     saveMockData(current);
-    return newRecord;
+    return decodeInspection(newRecord);
   },
 
   async update(id: string, updates: Partial<Omit<Inspection, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Inspection> {
     const now = new Date().toISOString();
+
+    // Fetch the current record first to determine original values for prefix mapping
+    const current = await this.get(id);
+    if (!current) throw new Error('Inspection not found');
+
+    // Handle 'ARCHIVED' conversion
+    let targetStatus = updates.status !== undefined ? updates.status : current.status;
+    let targetSignature = updates.signature !== undefined ? updates.signature : current.signature;
+
+    if (updates.status === 'ARCHIVED') {
+      if (current.status === 'APPROVED') {
+        targetStatus = 'APPROVED'; // Keep DB-safe enum
+        targetSignature = '[ARCHIVED_APPROVED] ' + (current.signature || '');
+      } else if (current.status === 'DECLINED') {
+        targetStatus = 'DECLINED'; // Keep DB-safe enum
+        targetSignature = '[ARCHIVED_DECLINED]';
+      } else {
+        targetStatus = current.status === 'ARCHIVED' ? 'APPROVED' : current.status; // Keep DB-safe enum
+        targetSignature = '[ARCHIVED_PENDING]';
+      }
+    }
 
     if (isSupabaseConfigured && supabase) {
       const dbUpdates: any = { updated_at: now };
@@ -212,10 +208,12 @@ export const db = {
       if (updates.repairName !== undefined) dbUpdates.repair_name = updates.repairName;
       if (updates.estimatedCost !== undefined) dbUpdates.estimated_cost = updates.estimatedCost;
       if (updates.urgency !== undefined) dbUpdates.urgency = updates.urgency;
-      if (updates.status !== undefined) dbUpdates.status = updates.status;
       if (updates.videoUrl !== undefined) dbUpdates.video_url = updates.videoUrl;
-      if (updates.signature !== undefined) dbUpdates.signature = updates.signature;
       if (updates.approvedAt !== undefined) dbUpdates.approved_at = updates.approvedAt;
+      
+      // Map translated DB-safe status and signature
+      dbUpdates.status = targetStatus;
+      dbUpdates.signature = targetSignature;
 
       const { data, error } = await supabase
         .from('inspections')
@@ -224,36 +222,22 @@ export const db = {
         .select()
         .single();
       if (error) throw error;
-      return {
-        id: data.id,
-        vehicleYear: data.vehicle_year,
-        vehicleMake: data.vehicle_make,
-        vehicleModel: data.vehicle_model,
-        vin: data.vin,
-        customerPhone: data.customer_phone,
-        repairName: data.repair_name,
-        estimatedCost: Number(data.estimated_cost),
-        urgency: data.urgency,
-        status: data.status,
-        videoUrl: data.video_url,
-        signature: data.signature,
-        approvedAt: data.approved_at,
-        createdAt: data.created_at,
-        updatedAt: data.updated_at,
-      };
+      return decodeInspection(data);
     }
 
-    const current = getMockData();
-    const index = current.findIndex(i => i.id === id);
+    const currentMockList = getMockData();
+    const index = currentMockList.findIndex(i => i.id === id);
     if (index === -1) throw new Error('Inspection not found');
 
     const updatedRecord = {
-      ...current[index],
+      ...currentMockList[index],
       ...updates,
+      status: targetStatus,
+      signature: targetSignature,
       updatedAt: now,
     };
-    current[index] = updatedRecord;
-    saveMockData(current);
-    return updatedRecord;
+    currentMockList[index] = updatedRecord;
+    saveMockData(currentMockList);
+    return decodeInspection(updatedRecord);
   }
 };
