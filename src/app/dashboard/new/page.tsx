@@ -21,7 +21,7 @@ import {
 import { db, isSupabaseConfigured, generateUUID } from '@/lib/db';
 import { offlineQueue } from '@/lib/offline-queue';
 import { auth } from '@/lib/auth';
-import { BrowserMultiFormatReader } from '@zxing/library';
+import { BrowserMultiFormatReader, BarcodeFormat, DecodeHintType } from '@zxing/library';
 
 const CAR_MAKES_AND_MODELS: Record<string, string[]> = {
   Ford: ['F-150', 'Escape', 'Explorer', 'Focus', 'Mustang', 'Fusion', 'Edge', 'Super Duty'],
@@ -874,7 +874,16 @@ function VinScannerModal({ isOpen, onClose, onDecode, isDark }: VinScannerModalP
       return;
     }
 
-    const codeReader = new BrowserMultiFormatReader();
+    // Set up optimized decoding hints for fast, high-accuracy VIN barcode retrieval
+    const hints = new Map();
+    hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+      BarcodeFormat.CODE_39,
+      BarcodeFormat.CODE_128,
+      BarcodeFormat.QR_CODE
+    ]);
+    hints.set(DecodeHintType.TRY_HARDER, true);
+
+    const codeReader = new BrowserMultiFormatReader(hints);
     let isMounted = true;
 
     async function startScanning() {
@@ -884,8 +893,8 @@ function VinScannerModal({ isOpen, onClose, onDecode, isDark }: VinScannerModalP
           {
             video: {
               facingMode: 'environment',
-              width: { ideal: 640 },
-              height: { ideal: 485 }
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
             }
           },
           videoRef.current!,
