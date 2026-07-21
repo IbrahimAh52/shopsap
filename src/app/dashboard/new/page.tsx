@@ -86,6 +86,11 @@ function NewInspectionForm() {
   const [authLoading, setAuthLoading] = useState<boolean>(true);
   const [currentUser, setCurrentUser] = useState<{ email: string; name: string } | null>(null);
 
+  // Advisor Select States
+  const [advisorsList, setAdvisorsList] = useState<string[]>([]);
+  const [selectedAdvisor, setSelectedAdvisor] = useState<string>('');
+  const [isAddingAdvisor, setIsAddingAdvisor] = useState<boolean>(false);
+
   // Verify user is authenticated
   useEffect(() => {
     let active = true;
@@ -106,6 +111,26 @@ function NewInspectionForm() {
     };
   }, [router]);
 
+  // Load list of advisors from localStorage and past database records
+  useEffect(() => {
+    const saved = localStorage.getItem('shopsnap_shop_advisors');
+    let list: string[] = saved ? JSON.parse(saved) : [];
+
+    db.list().then((inspections) => {
+      const dbAdvisors = inspections.map((i) => i.advisorName).filter(Boolean) as string[];
+      const combined = Array.from(new Set([...list, ...dbAdvisors]));
+      if (currentUser?.name && !combined.includes(currentUser.name)) {
+        combined.push(currentUser.name);
+      }
+      setAdvisorsList(combined);
+      localStorage.setItem('shopsnap_shop_advisors', JSON.stringify(combined));
+    });
+
+    if (currentUser?.name && !editId) {
+      setSelectedAdvisor(currentUser.name);
+    }
+  }, [currentUser, editId]);
+
   // Pre-fill if loading from queue
   useEffect(() => {
     if (editId) {
@@ -119,6 +144,9 @@ function NewInspectionForm() {
           setRepairName(data.repairName);
           setEstimatedCost(data.estimatedCost.toString());
           setUrgency(data.urgency);
+          if (data.advisorName) {
+            setSelectedAdvisor(data.advisorName);
+          }
           
           if (CAR_MAKES_AND_MODELS[data.vehicleMake]) {
             setIsOtherMake(false);
@@ -221,7 +249,7 @@ function NewInspectionForm() {
       repairName,
       estimatedCost: costNum,
       urgency,
-      advisorName: currentUser?.name || 'Advisor',
+      advisorName: selectedAdvisor || currentUser?.name || 'Advisor',
       advisorEmail: currentUser?.email || '',
     };
 
@@ -752,6 +780,71 @@ function NewInspectionForm() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Service Advisor selection */}
+            <div>
+              <label className={`block text-[10px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Assigned Service Advisor <span className="text-red-500">*</span></label>
+              {!isAddingAdvisor ? (
+                <select
+                  value={selectedAdvisor}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === 'ADD_NEW') {
+                      setIsAddingAdvisor(true);
+                      setSelectedAdvisor('');
+                    } else {
+                      setSelectedAdvisor(val);
+                    }
+                  }}
+                  className={`w-full h-12 px-3 rounded-xl border focus:border-blue-500 focus:outline-none text-sm ${
+                    isDark 
+                      ? 'bg-gray-955 border-gray-800 text-white' 
+                      : 'bg-gray-50 border-gray-300 text-gray-850'
+                  }`}
+                  required
+                >
+                  <option value="">Select Advisor...</option>
+                  {advisorsList.map((adv) => (
+                    <option key={adv} value={adv}>{adv}</option>
+                  ))}
+                  <option value="ADD_NEW">+ Add New Advisor...</option>
+                </select>
+              ) : (
+                <div className="relative">
+                  <input 
+                    type="text"
+                    placeholder="Type advisor's name (e.g. Bob Smith)"
+                    value={selectedAdvisor}
+                    onChange={(e) => setSelectedAdvisor(e.target.value)}
+                    className={`w-full h-12 pl-3 pr-24 rounded-xl border focus:border-blue-500 focus:outline-none text-sm ${
+                      isDark 
+                        ? 'bg-gray-955 border-gray-800 text-white' 
+                        : 'bg-gray-50 border-gray-300 text-gray-850'
+                    }`}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedAdvisor.trim()) {
+                        const newName = selectedAdvisor.trim();
+                        const updated = Array.from(new Set([...advisorsList, newName]));
+                        setAdvisorsList(updated);
+                        localStorage.setItem('shopsnap_shop_advisors', JSON.stringify(updated));
+                        setIsAddingAdvisor(false);
+                        setSelectedAdvisor(newName);
+                      } else {
+                        setIsAddingAdvisor(false);
+                        setSelectedAdvisor(currentUser?.name || '');
+                      }
+                    }}
+                    className="absolute right-2 top-2 h-8 px-2 text-[10px] font-bold bg-blue-600 hover:bg-blue-750 text-white rounded-lg transition-colors"
+                  >
+                    Add & Use
+                  </button>
+                </div>
+              )}
             </div>
 
           </div>

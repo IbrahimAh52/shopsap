@@ -51,7 +51,7 @@ export default function MechanicDashboard() {
   // Search & Tab States
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
-  const [advisorFilter, setAdvisorFilter] = useState<'all' | 'mine'>('all');
+  const [advisorFilter, setAdvisorFilter] = useState<string>('all');
 
   // Copy state tracker
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -274,13 +274,14 @@ export default function MechanicDashboard() {
     }
   };
 
+  // Harvest list of advisors dynamically from current inspections
+  const availableAdvisors = Array.from(new Set(inspections.map(i => i.advisorName).filter(Boolean))) as string[];
+
   // Filter inspections based on search query and advisor selection
   const searchedInspections = inspections.filter(item => {
-    // 1. Filter by advisor if 'mine' is selected
-    if (advisorFilter === 'mine' && currentUser) {
-      const matchEmail = item.advisorEmail && item.advisorEmail.toLowerCase() === currentUser.email.toLowerCase();
-      const matchName = item.advisorName && item.advisorName.toLowerCase() === currentUser.name.toLowerCase();
-      if (!matchEmail && !matchName) return false;
+    // 1. Filter by specific advisor if selected
+    if (advisorFilter !== 'all') {
+      if (item.advisorName !== advisorFilter) return false;
     }
 
     // 2. Filter by search query
@@ -494,35 +495,26 @@ export default function MechanicDashboard() {
             >
               Archived History ({archived.length})
             </button>
+          </div>          {/* Advisor Filter Dropdown */}
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-gray-500' : 'text-gray-450'}`}>
+              Advisor:
+            </span>
+            <select
+              value={advisorFilter}
+              onChange={(e) => setAdvisorFilter(e.target.value)}
+              className={`h-10 px-3 text-xs font-bold rounded-xl border focus:border-blue-500 focus:outline-none transition-colors w-full md:w-44 ${
+                isDark 
+                  ? 'bg-gray-955 border-gray-850 text-gray-305' 
+                  : 'bg-gray-50 border-gray-300 text-gray-700'
+              }`}
+            >
+              <option value="all">All Advisors</option>
+              {availableAdvisors.map((adv) => (
+                <option key={adv} value={adv}>{adv}</option>
+              ))}
+            </select>
           </div>
-
-          {/* Advisor Filter Selector */}
-          {currentUser && (
-            <div className="flex items-center gap-1.5 p-1 bg-gray-50/5 dark:bg-gray-950/20 rounded-xl border border-gray-200/50 dark:border-gray-800/80 w-full md:w-auto">
-              <button
-                type="button"
-                onClick={() => setAdvisorFilter('all')}
-                className={`flex-1 md:flex-initial px-3.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider rounded-lg transition-all border ${
-                  advisorFilter === 'all'
-                    ? 'bg-blue-650/15 text-blue-500 border-blue-500/30'
-                    : 'text-gray-405 hover:text-gray-200 dark:hover:text-white border-transparent'
-                }`}
-              >
-                All Advisors
-              </button>
-              <button
-                type="button"
-                onClick={() => setAdvisorFilter('mine')}
-                className={`flex-1 md:flex-initial px-3.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wider rounded-lg transition-all border ${
-                  advisorFilter === 'mine'
-                    ? 'bg-blue-655/15 text-blue-500 border-blue-500/30'
-                    : 'text-gray-405 hover:text-gray-200 dark:hover:text-white border-transparent'
-                }`}
-              >
-                My Cards Only
-              </button>
-            </div>
-          )}
 
           {/* Search Input */}
           <div className="relative w-full md:w-72">
