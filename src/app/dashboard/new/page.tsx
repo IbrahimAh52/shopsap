@@ -183,8 +183,8 @@ function NewInspectionForm() {
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  // Theme state: defaults to dark (true) for greasy hands / bays
-  const [isDark, setIsDark] = useState<boolean>(true);
+  // Theme state: defaults to light (false)
+  const [isDark, setIsDark] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -199,7 +199,9 @@ function NewInspectionForm() {
 
       // Load saved mechanic theme
       const savedTheme = localStorage.getItem('shopsnap_mechanic_theme');
-      if (savedTheme === 'light') {
+      if (savedTheme === 'dark') {
+        setIsDark(true);
+      } else {
         setIsDark(false);
       }
 

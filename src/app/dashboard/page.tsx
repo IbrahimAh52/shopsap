@@ -46,8 +46,8 @@ export default function MechanicDashboard() {
   const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
 
-  // Theme state: defaults to dark (true) for greasy hands / bays
-  const [isDark, setIsDark] = useState<boolean>(true);
+  // Theme state: defaults to light (false)
+  const [isDark, setIsDark] = useState<boolean>(false);
 
   // Search & Tab States
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -107,7 +107,9 @@ export default function MechanicDashboard() {
       
       // Load saved mechanic theme
       const savedTheme = localStorage.getItem('shopsnap_mechanic_theme');
-      if (savedTheme === 'light') {
+      if (savedTheme === 'dark') {
+        setIsDark(true);
+      } else {
         setIsDark(false);
       }
 
