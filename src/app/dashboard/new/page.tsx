@@ -93,6 +93,7 @@ function NewInspectionForm() {
   const [selectedAdvisor, setSelectedAdvisor] = useState<string>('');
   const [isAddingAdvisor, setIsAddingAdvisor] = useState<boolean>(false);
   const [shopName, setShopName] = useState<string>('');
+  const [province, setProvince] = useState<string>('');
   const [successSmsUrl, setSuccessSmsUrl] = useState<string | null>(null);
 
   // Verify user is authenticated
@@ -136,6 +137,7 @@ function NewInspectionForm() {
 
     if (!editId && typeof window !== 'undefined') {
       setShopName(localStorage.getItem('shopsnap_shop_name') || 'ShopSnap');
+      setProvince(localStorage.getItem('shopsnap_shop_province') || 'ON');
     }
   }, [currentUser, editId]);
 
@@ -159,6 +161,11 @@ function NewInspectionForm() {
             setShopName(data.shopName);
           } else if (typeof window !== 'undefined') {
             setShopName(localStorage.getItem('shopsnap_shop_name') || 'ShopSnap');
+          }
+          if (data.province) {
+            setProvince(data.province);
+          } else if (typeof window !== 'undefined') {
+            setProvince(localStorage.getItem('shopsnap_shop_province') || 'ON');
           }
           
           if (CAR_MAKES_AND_MODELS[data.vehicleMake]) {
@@ -269,6 +276,7 @@ function NewInspectionForm() {
       advisorName: selectedAdvisor || currentUser?.name || 'Advisor',
       advisorEmail: currentUser?.email || '',
       shopName: finalShopName,
+      province: province || 'ON',
     };
 
     try {
@@ -387,6 +395,7 @@ function NewInspectionForm() {
           });
         }
 
+        const quoteUrl = `${window.location.origin}/quote/${inspectionId}`;
         const smsText = `${metadata.shopName || 'ShopSnap'}: ${metadata.vehicleMake} ${metadata.vehicleModel} checkup. Required service: ${metadata.repairName}. Estimate: $${costNum.toFixed(2)}. Review details & approve here: ${quoteUrl}`;
         
         // Save locally for dashboard simulated toast overlay fallback

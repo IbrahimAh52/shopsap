@@ -22,6 +22,7 @@ export interface Inspection {
   advisorName?: string;
   advisorEmail?: string;
   shopName?: string;
+  province?: string;
 }
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -87,6 +88,7 @@ function decodeInspection(row: any): Inspection {
   let advisorName = row.advisor_name !== undefined ? row.advisor_name : row.advisorName;
   let advisorEmail = row.advisor_email !== undefined ? row.advisor_email : row.advisorEmail;
   let shopName = row.shop_name !== undefined ? row.shop_name : row.shopName;
+  let province = row.province !== undefined ? row.province : row.province;
 
   // Decouple packed VIN from repairName if present
   if (repairName && /\[VIN:([A-Z0-9]{17})\]/i.test(repairName)) {
@@ -124,6 +126,15 @@ function decodeInspection(row: any): Inspection {
     }
   }
 
+  // Decouple packed PROVINCE from repairName if present
+  if (repairName && /\[PROVINCE:([A-Z]{2,4})\]/i.test(repairName)) {
+    const match = repairName.match(/\[PROVINCE:([A-Z]{2,4})\]/i);
+    if (match) {
+      province = match[1].toUpperCase();
+      repairName = repairName.replace(/\[PROVINCE:[A-Z]{2,4}\]/i, '').trim();
+    }
+  }
+
   return {
     id: row.id,
     vehicleYear: row.vehicle_year !== undefined ? row.vehicle_year : row.vehicleYear,
@@ -143,6 +154,7 @@ function decodeInspection(row: any): Inspection {
     advisorName,
     advisorEmail,
     shopName,
+    province,
   };
 }
 
@@ -230,7 +242,7 @@ export const db = {
             vehicle_model: newRecord.vehicleModel,
             vin: newRecord.vin,
             customer_phone: newRecord.customerPhone,
-            repair_name: newRecord.repairName,
+            repair_name: newRecord.repairName + (newRecord.province ? ` [PROVINCE:${newRecord.province}]` : ''),
             estimated_cost: newRecord.estimatedCost,
             urgency: newRecord.urgency,
             status: newRecord.status === 'ARCHIVED' ? 'APPROVED' : newRecord.status,
@@ -255,6 +267,7 @@ export const db = {
           newRecord.advisorName ? `[ADVISOR:${newRecord.advisorName}]` : '',
           newRecord.advisorEmail ? `[EMAIL:${newRecord.advisorEmail}]` : '',
           newRecord.shopName ? `[SHOP:${newRecord.shopName}]` : '',
+          newRecord.province ? `[PROVINCE:${newRecord.province}]` : '',
         ].filter(Boolean);
 
         const packedRepairName = packedParts.join(' ');
@@ -319,7 +332,14 @@ export const db = {
         if (updates.vehicleModel !== undefined) dbUpdates.vehicle_model = updates.vehicleModel;
         if (updates.vin !== undefined) dbUpdates.vin = updates.vin;
         if (updates.customerPhone !== undefined) dbUpdates.customer_phone = updates.customerPhone;
-        if (updates.repairName !== undefined) dbUpdates.repair_name = updates.repairName;
+        
+        const targetRepairName = updates.repairName !== undefined ? updates.repairName : current.repairName;
+        const targetProvince = updates.province !== undefined ? updates.province : current.province;
+        let cleanRepairName = targetRepairName
+          .replace(/\[PROVINCE:[A-Z]{2,4}\]/i, '')
+          .trim();
+        dbUpdates.repair_name = targetProvince ? `${cleanRepairName} [PROVINCE:${targetProvince}]` : cleanRepairName;
+
         if (updates.estimatedCost !== undefined) dbUpdates.estimated_cost = updates.estimatedCost;
         if (updates.urgency !== undefined) dbUpdates.urgency = updates.urgency;
         if (updates.videoUrl !== undefined) dbUpdates.video_url = updates.videoUrl;
@@ -363,12 +383,14 @@ export const db = {
           const targetAdvName = updates.advisorName !== undefined ? updates.advisorName : current.advisorName;
           const targetAdvEmail = updates.advisorEmail !== undefined ? updates.advisorEmail : current.advisorEmail;
           const targetShopName = updates.shopName !== undefined ? updates.shopName : current.shopName;
+          const targetProvince = updates.province !== undefined ? updates.province : current.province;
           
           let cleanRepairName = baseRepairName
-            .replace(/\s\[VIN:[A-Z0-9]{17}\]/i, '')
-            .replace(/\s\[ADVISOR:[^\]]+\]/i, '')
-            .replace(/\s\[EMAIL:[^\]]+\]/i, '')
-            .replace(/\s\[SHOP:[^\]]+\]/i, '')
+            .replace(/\[VIN:[A-Z0-9]{17}\]/i, '')
+            .replace(/\[ADVISOR:[^\]]+\]/i, '')
+            .replace(/\[EMAIL:[^\]]+\]/i, '')
+            .replace(/\[SHOP:[^\]]+\]/i, '')
+            .replace(/\[PROVINCE:[A-Z]{2,4}\]/i, '')
             .trim();
 
           const packedParts = [cleanRepairName];
@@ -376,6 +398,7 @@ export const db = {
           if (targetAdvName) packedParts.push(`[ADVISOR:${targetAdvName}]`);
           if (targetAdvEmail) packedParts.push(`[EMAIL:${targetAdvEmail}]`);
           if (targetShopName) packedParts.push(`[SHOP:${targetShopName}]`);
+          if (targetProvince) packedParts.push(`[PROVINCE:${targetProvince}]`);
 
           dbUpdates.repair_name = packedParts.filter(Boolean).join(' ');
 

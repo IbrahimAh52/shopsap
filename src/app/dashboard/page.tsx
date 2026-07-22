@@ -33,6 +33,23 @@ import { db, Inspection, isSupabaseConfigured } from '@/lib/db';
 import { offlineQueue } from '@/lib/offline-queue';
 import { auth, UserSession } from '@/lib/auth';
 
+const CANADIAN_PROVINCES = [
+  { code: 'AB', name: 'Alberta (5% GST)' },
+  { code: 'BC', name: 'British Columbia (12% GST+PST)' },
+  { code: 'MB', name: 'Manitoba (12% GST+PST)' },
+  { code: 'NB', name: 'New Brunswick (15% HST)' },
+  { code: 'NL', name: 'Newfoundland & Labrador (15% HST)' },
+  { code: 'NS', name: 'Nova Scotia (15% HST)' },
+  { code: 'NT', name: 'Northwest Territories (5% GST)' },
+  { code: 'NU', name: 'Nunavut (5% GST)' },
+  { code: 'ON', name: 'Ontario (13% HST)' },
+  { code: 'PE', name: 'Prince Edward Island (15% HST)' },
+  { code: 'QC', name: 'Quebec (14.975% GST+QST)' },
+  { code: 'SK', name: 'Saskatchewan (11% GST+PST)' },
+  { code: 'YT', name: 'Yukon (5% GST)' },
+  { code: 'NONE', name: 'No Sales Tax (0%)' }
+];
+
 export default function MechanicDashboard() {
   const router = useRouter();
   const [inspections, setInspections] = useState<Inspection[]>([]);
@@ -58,6 +75,7 @@ export default function MechanicDashboard() {
   // Settings states
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [shopNameSetting, setShopNameSetting] = useState<string>('ShopSnap');
+  const [shopProvinceSetting, setShopProvinceSetting] = useState<string>('ON');
 
   // Copy state tracker
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -118,6 +136,8 @@ export default function MechanicDashboard() {
       if (savedShop) {
         setShopNameSetting(savedShop);
       }
+
+      setShopProvinceSetting(localStorage.getItem('shopsnap_shop_province') || 'ON');
 
       const handleOnline = () => {
         setIsOnline(true);
@@ -899,6 +919,30 @@ export default function MechanicDashboard() {
                 </button>
               </div>
 
+              {/* Province Selector */}
+              <div>
+                <label className={`block text-[10px] font-bold uppercase tracking-wider mb-1.5 ${
+                  isDark ? 'text-gray-400' : 'text-gray-500'
+                }`}>
+                  Shop Location (Province for Taxes)
+                </label>
+                <select
+                  value={shopProvinceSetting}
+                  onChange={(e) => setShopProvinceSetting(e.target.value)}
+                  className={`w-full h-11 px-3 rounded-xl border focus:border-blue-500 focus:outline-none text-sm font-semibold ${
+                    isDark 
+                      ? 'bg-gray-955 border-gray-805 text-white' 
+                      : 'bg-gray-50 border-gray-300 text-gray-900 shadow-xs'
+                  }`}
+                >
+                  {CANADIAN_PROVINCES.map((prov) => (
+                    <option key={prov.code} value={prov.code}>
+                      {prov.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="flex gap-2.5 pt-2">
                 <button
                   type="button"
@@ -916,6 +960,7 @@ export default function MechanicDashboard() {
                   onClick={() => {
                     const cleanName = shopNameSetting.trim();
                     localStorage.setItem('shopsnap_shop_name', cleanName || 'ShopSnap');
+                    localStorage.setItem('shopsnap_shop_province', shopProvinceSetting);
                     setIsSettingsOpen(false);
                     // Emit storage update event to alert any listening pages
                     window.dispatchEvent(new Event('storage_updated'));

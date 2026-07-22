@@ -13,6 +13,23 @@ import {
 } from 'lucide-react';
 import { db, Inspection } from '@/lib/db';
 
+const PROVINCE_TAXES: Record<string, { name: string; rate: number; label: string }> = {
+  AB: { name: 'Alberta', rate: 0.05, label: 'GST (5%)' },
+  BC: { name: 'British Columbia', rate: 0.12, label: 'GST+PST (12%)' },
+  MB: { name: 'Manitoba', rate: 0.12, label: 'GST+PST (12%)' },
+  NB: { name: 'New Brunswick', rate: 0.15, label: 'HST (15%)' },
+  NL: { name: 'Newfoundland & Labrador', rate: 0.15, label: 'HST (15%)' },
+  NS: { name: 'Nova Scotia', rate: 0.15, label: 'HST (15%)' },
+  NT: { name: 'Northwest Territories', rate: 0.05, label: 'GST (5%)' },
+  NU: { name: 'Nunavut', rate: 0.05, label: 'GST (5%)' },
+  ON: { name: 'Ontario', rate: 0.13, label: 'HST (13%)' },
+  PE: { name: 'Prince Edward Island', rate: 0.15, label: 'HST (15%)' },
+  QC: { name: 'Quebec', rate: 0.14975, label: 'GST+QST (14.975%)' },
+  SK: { name: 'Saskatchewan', rate: 0.11, label: 'GST+PST (11%)' },
+  YT: { name: 'Yukon', rate: 0.05, label: 'GST (5%)' },
+  NONE: { name: 'No Tax', rate: 0, label: 'Sales Tax (0%)' }
+};
+
 export default function CustomerQuotePortal() {
   const params = useParams();
   const quoteId = params.quoteId as string;
@@ -143,6 +160,13 @@ export default function CustomerQuotePortal() {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
   };
 
+  const provCode = (inspection.province || 'ON').toUpperCase();
+  const taxInfo = PROVINCE_TAXES[provCode] || PROVINCE_TAXES['ON'];
+  
+  const subtotal = inspection.estimatedCost || 0;
+  const taxAmount = subtotal * taxInfo.rate;
+  const totalAmount = subtotal + taxAmount;
+
   return (
     <div className="flex flex-col flex-1 min-h-screen bg-gray-50 text-gray-900 font-sans antialiased selection:bg-blue-100">
       
@@ -247,17 +271,17 @@ export default function CustomerQuotePortal() {
             <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 space-y-2 mt-4">
               <div className="flex items-center justify-between text-xs text-gray-500 font-medium">
                 <span>Subtotal</span>
-                <span>{formatCost(inspection.estimatedCost)}</span>
+                <span>{formatCost(subtotal)}</span>
               </div>
               <div className="flex items-center justify-between text-xs text-gray-500 font-medium">
-                <span>Sales Tax / Fees</span>
-                <span>$0.00</span>
+                <span>Sales Tax ({taxInfo.label})</span>
+                <span>{formatCost(taxAmount)}</span>
               </div>
               <div className="h-px bg-gray-200 my-1" />
               <div className="flex items-center justify-between text-sm text-gray-800 font-extrabold">
                 <span>Total Authorization</span>
                 <span className="text-base font-black text-gray-900">
-                  {formatCost(inspection.estimatedCost)}
+                  {formatCost(totalAmount)}
                 </span>
               </div>
             </div>
