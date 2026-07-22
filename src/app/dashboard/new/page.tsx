@@ -90,6 +90,7 @@ function NewInspectionForm() {
   const [advisorsList, setAdvisorsList] = useState<string[]>([]);
   const [selectedAdvisor, setSelectedAdvisor] = useState<string>('');
   const [isAddingAdvisor, setIsAddingAdvisor] = useState<boolean>(false);
+  const [shopName, setShopName] = useState<string>('');
 
   // Verify user is authenticated
   useEffect(() => {
@@ -129,6 +130,10 @@ function NewInspectionForm() {
     if (currentUser?.name && !editId) {
       setSelectedAdvisor(currentUser.name);
     }
+
+    if (!editId && typeof window !== 'undefined') {
+      setShopName(localStorage.getItem('shopsnap_shop_name') || 'ShopSnap');
+    }
   }, [currentUser, editId]);
 
   // Pre-fill if loading from queue
@@ -144,8 +149,13 @@ function NewInspectionForm() {
           setRepairName(data.repairName);
           setEstimatedCost(data.estimatedCost.toString());
           setUrgency(data.urgency);
-          if (data.advisorName) {
+           if (data.advisorName) {
             setSelectedAdvisor(data.advisorName);
+          }
+          if (data.shopName) {
+            setShopName(data.shopName);
+          } else if (typeof window !== 'undefined') {
+            setShopName(localStorage.getItem('shopsnap_shop_name') || 'ShopSnap');
           }
           
           if (CAR_MAKES_AND_MODELS[data.vehicleMake]) {
@@ -240,7 +250,7 @@ function NewInspectionForm() {
     const inspectionId = editId || generateUUID();
     const isEditing = !!editId;
 
-    const savedShopName = typeof window !== 'undefined' ? (localStorage.getItem('shopsnap_shop_name') || 'ShopSnap') : 'ShopSnap';
+    const finalShopName = shopName || 'ShopSnap';
 
     const metadata = {
       vehicleYear: parseInt(vehicleYear) || new Date().getFullYear(),
@@ -253,7 +263,7 @@ function NewInspectionForm() {
       urgency,
       advisorName: selectedAdvisor || currentUser?.name || 'Advisor',
       advisorEmail: currentUser?.email || '',
-      shopName: savedShopName,
+      shopName: finalShopName,
     };
 
     try {
@@ -372,8 +382,7 @@ function NewInspectionForm() {
           });
         }
 
-        const savedShopName = typeof window !== 'undefined' ? (localStorage.getItem('shopsnap_shop_name') || 'ShopSnap') : 'ShopSnap';
-        const smsText = `${savedShopName}: ${metadata.vehicleMake} ${metadata.vehicleModel} checkup. Required service: ${metadata.repairName}. Estimate: $${costNum.toFixed(2)}. Review details & approve here: ${quoteUrl}`;
+        const smsText = `${metadata.shopName || 'ShopSnap'}: ${metadata.vehicleMake} ${metadata.vehicleModel} checkup. Required service: ${metadata.repairName}. Estimate: $${costNum.toFixed(2)}. Review details & approve here: ${quoteUrl}`;
         
         // Save locally for dashboard simulated toast overlay fallback
         localStorage.setItem('shopsnap_sms_log', JSON.stringify({

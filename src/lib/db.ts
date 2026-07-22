@@ -89,38 +89,38 @@ function decodeInspection(row: any): Inspection {
   let shopName = row.shop_name !== undefined ? row.shop_name : row.shopName;
 
   // Decouple packed VIN from repairName if present
-  if (repairName && repairName.includes(' [VIN:')) {
-    const match = repairName.match(/\s\[VIN:([A-Z0-9]{17})\]/i);
+  if (repairName && /\[VIN:([A-Z0-9]{17})\]/i.test(repairName)) {
+    const match = repairName.match(/\[VIN:([A-Z0-9]{17})\]/i);
     if (match) {
       vin = match[1];
-      repairName = repairName.replace(/\s\[VIN:[A-Z0-9]{17}\]/i, '');
+      repairName = repairName.replace(/\[VIN:[A-Z0-9]{17}\]/i, '').trim();
     }
   }
 
   // Decouple packed ADVISOR from repairName if present
-  if (repairName && repairName.includes(' [ADVISOR:')) {
-    const match = repairName.match(/\s\[ADVISOR:([^\]]+)\]/i);
+  if (repairName && /\[ADVISOR:([^\]]+)\]/i.test(repairName)) {
+    const match = repairName.match(/\[ADVISOR:([^\]]+)\]/i);
     if (match) {
       advisorName = match[1];
-      repairName = repairName.replace(/\s\[ADVISOR:[^\]]+\]/i, '');
+      repairName = repairName.replace(/\[ADVISOR:[^\]]+\]/i, '').trim();
     }
   }
 
   // Decouple packed EMAIL from repairName if present
-  if (repairName && repairName.includes(' [EMAIL:')) {
-    const match = repairName.match(/\s\[EMAIL:([^\]]+)\]/i);
+  if (repairName && /\[EMAIL:([^\]]+)\]/i.test(repairName)) {
+    const match = repairName.match(/\[EMAIL:([^\]]+)\]/i);
     if (match) {
       advisorEmail = match[1];
-      repairName = repairName.replace(/\s\[EMAIL:[^\]]+\]/i, '');
+      repairName = repairName.replace(/\[EMAIL:[^\]]+\]/i, '').trim();
     }
   }
 
   // Decouple packed SHOP from repairName if present
-  if (repairName && repairName.includes(' [SHOP:')) {
-    const match = repairName.match(/\s\[SHOP:([^\]]+)\]/i);
+  if (repairName && /\[SHOP:([^\]]+)\]/i.test(repairName)) {
+    const match = repairName.match(/\[SHOP:([^\]]+)\]/i);
     if (match) {
       shopName = match[1];
-      repairName = repairName.replace(/\s\[SHOP:[^\]]+\]/i, '');
+      repairName = repairName.replace(/\[SHOP:[^\]]+\]/i, '').trim();
     }
   }
 
