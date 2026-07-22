@@ -39,7 +39,7 @@ export default function Home() {
       {/* Navigation (sticky, safe-area top padding PWA notched screens) */}
       <header className="sticky top-0 z-40 w-full border-b border-slate-100 px-6 pb-5 pt-safe bg-white/90 backdrop-blur-md flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
-          <div className="relative w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-xs">
+          <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-650 flex items-center justify-center text-white shadow-md shadow-blue-500/10">
             <Settings className="w-5 h-5 animate-[spin_10s_linear_infinite]" />
             <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border border-white flex items-center justify-center text-white">
               <Check className="w-2.5 h-2.5 stroke-[3.5]" />

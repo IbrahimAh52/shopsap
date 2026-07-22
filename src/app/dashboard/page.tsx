@@ -27,9 +27,7 @@ import {
   LogOut,
   Loader2,
   Settings,
-  ChevronDown,
-  ShieldCheck,
-  Archive
+  ChevronDown
 } from 'lucide-react';
 import { db, Inspection, isSupabaseConfigured } from '@/lib/db';
 import { offlineQueue } from '@/lib/offline-queue';
@@ -64,7 +62,14 @@ export default function MechanicDashboard() {
   // Auth States
   const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
-  const isDark = false;
+
+  // Theme state: reads saved preference immediately
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('shopsnap_mechanic_theme') === 'dark';
+    }
+    return false;
+  });
 
   // Search & Tab States
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -139,6 +144,10 @@ export default function MechanicDashboard() {
     if (typeof window !== 'undefined') {
       setIsOnline(navigator.onLine);
       
+      // Load saved mechanic theme
+      const savedTheme = localStorage.getItem('shopsnap_mechanic_theme');
+      setIsDark(savedTheme === 'dark');
+
       // Sync settings from localStorage (in case they were set by another tab)
       const savedShop = localStorage.getItem('shopsnap_shop_name');
       if (savedShop) setShopNameSetting(savedShop);
@@ -224,7 +233,11 @@ export default function MechanicDashboard() {
     return () => clearInterval(interval);
   }, []);
 
-
+  const toggleTheme = () => {
+    const nextTheme = !isDark;
+    setIsDark(nextTheme);
+    localStorage.setItem('shopsnap_mechanic_theme', nextTheme ? 'dark' : 'light');
+  };
 
   const toggleNetwork = () => {
     const nextState = !isOnline;
@@ -371,36 +384,6 @@ export default function MechanicDashboard() {
     }
   };
 
-  // Action: Resend SMS Receipt link to client anytime
-  const handleResendSms = (item: Inspection) => {
-    const costNum = item.items?.reduce((sum, i) => sum + (i.cost || 0), 0) || item.estimatedCost;
-    const jobsSummary = item.items && item.items.length > 1
-      ? `${item.items[0].name} & ${item.items.length - 1} other jobs`
-      : (item.repairName || 'General Repair');
-      
-    const quoteUrl = `${window.location.origin}/quote/${item.id}`;
-    const statusText = item.status === 'APPROVED' ? 'Approved Receipt' : item.status === 'DECLINED' ? 'Declined Quote' : 'Checkup Report';
-    const smsText = `${item.shopName || 'ShopSnap'}: ${item.vehicleMake} ${item.vehicleModel} ${statusText}. Required service: ${jobsSummary}. Estimate: $${costNum.toFixed(2)}. View receipt details here: ${quoteUrl}`;
-
-    localStorage.setItem('shopsnap_sms_log', JSON.stringify({
-      id: item.id,
-      phone: item.customerPhone,
-      text: smsText
-    }));
-
-    setLastSmsMessage({
-      id: item.id,
-      phone: item.customerPhone,
-      text: smsText
-    });
-
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const separator = isIOS ? '&' : '?';
-    const smsUrl = `sms:${item.customerPhone}${separator}body=${encodeURIComponent(smsText)}`;
-    window.location.href = smsUrl;
-  };
-
   // Harvest list of advisors dynamically from current inspections
   const availableAdvisors = Array.from(new Set(inspections.map(i => i.advisorName).filter(Boolean))) as string[];
 
@@ -444,22 +427,30 @@ export default function MechanicDashboard() {
   }
 
   return (
-    <div className="flex flex-col flex-1 min-h-screen pb-24 bg-gray-50 text-gray-900 font-sans antialiased">
+    <div className={`flex flex-col flex-1 min-h-screen pb-24 transition-colors duration-200 ${
+      isDark ? 'bg-[#070b13] text-gray-100' : 'bg-gray-50 text-gray-900'
+    }`}>
       {/* Top Header */}
-      <header className="sticky top-0 z-40 px-4 pb-3 pt-safe flex items-center justify-between bg-white border-b border-gray-200/80 shadow-xs">
+      <header className={`sticky top-0 z-40 px-4 pb-3 pt-safe flex items-center justify-between border-b transition-colors duration-200 ${
+        isDark ? 'bg-[#0e1726]/90 border-gray-855/80 backdrop-blur' : 'bg-white border-gray-250/80 shadow-xs'
+      }`}>
         <div className="flex items-center gap-2">
-          <div className="relative w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-xs">
+          <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-650 flex items-center justify-center text-white shadow-md shadow-blue-500/10">
             <Settings className="w-5 h-5 animate-[spin_10s_linear_infinite]" />
             <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border border-white flex items-center justify-center text-white">
               <Check className="w-2.5 h-2.5 stroke-[3.5]" />
             </div>
           </div>
           <div className="flex flex-col">
-            <h1 className="text-xl font-extrabold tracking-tight leading-none text-slate-900">
+            <h1 className={`text-xl font-extrabold tracking-tight leading-none ${
+              isDark ? 'text-white' : 'text-slate-900'
+            }`}>
               ShopSnap
             </h1>
-            <p className="text-[9px] font-bold uppercase tracking-widest mt-0.5 text-gray-500">
-              Advisor: <span className="text-blue-600 font-extrabold">{currentUser?.name}</span>
+            <p className={`text-[9px] font-bold uppercase tracking-widest mt-0.5 ${
+              isDark ? 'text-gray-455 font-medium' : 'text-gray-500'
+            }`}>
+              Advisor: <span className={isDark ? 'text-blue-400 font-bold' : 'text-blue-600 font-extrabold'}>{currentUser?.name}</span>
             </p>
           </div>
         </div>
@@ -469,7 +460,11 @@ export default function MechanicDashboard() {
           {/* Settings Button */}
           <button
             onClick={() => setIsSettingsOpen(true)}
-            className="px-3 py-2 rounded-xl border border-gray-300 text-gray-700 bg-gray-100 hover:text-gray-900 hover:bg-gray-200 transition-colors flex items-center gap-1.5 text-xs font-bold"
+            className={`px-3 py-2 rounded-xl border transition-colors flex items-center gap-1.5 text-xs font-bold ${
+              isDark 
+                ? 'bg-gray-800/40 border-gray-700 text-gray-305 hover:text-white' 
+                : 'bg-gray-100 border-gray-305 text-gray-605 hover:text-gray-900 hover:bg-gray-200'
+            }`}
             title="Shop Settings"
             aria-label="Shop Settings"
           >
@@ -483,7 +478,11 @@ export default function MechanicDashboard() {
               await auth.logout();
               router.push('/login');
             }}
-            className="px-3 py-2 rounded-xl border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 transition-colors flex items-center gap-1.5 text-xs font-bold"
+            className={`px-3 py-2 rounded-xl border transition-colors flex items-center gap-1.5 text-xs font-bold ${
+              isDark 
+                ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:text-red-300 hover:bg-red-500/20' 
+                : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
+            }`}
             title="Log Out"
             aria-label="Log Out"
           >
@@ -517,15 +516,19 @@ export default function MechanicDashboard() {
         
         {/* SMS Notification Banner */}
         {lastSmsMessage && (
-          <div className="border-l-4 border-blue-500 p-4 rounded-xl shadow-xl animate-bounce flex flex-col gap-1.5 bg-white text-gray-800 border border-gray-200">
+          <div className={`border-l-4 border-blue-500 p-4 rounded-xl shadow-xl animate-bounce flex flex-col gap-1.5 ${
+            isDark ? 'bg-gray-900 text-gray-200' : 'bg-white text-gray-800 border border-gray-200'
+          }`}>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-blue-600 flex items-center gap-1">
+              <span className="text-xs font-bold text-blue-550 flex items-center gap-1">
                 <Send className="w-3 h-3" /> SMS DISPATCH MOCK
               </span>
               <button onClick={() => setLastSmsMessage(null)} className="text-gray-400 hover:text-gray-600 text-xs font-bold px-1.5">✕</button>
             </div>
             <p className="text-xs font-bold">To: {lastSmsMessage.phone}</p>
-            <p className="text-sm italic p-2.5 rounded font-mono border break-all bg-gray-50 border-gray-200 text-gray-600">
+            <p className={`text-sm italic p-2.5 rounded font-mono border break-all ${
+              isDark ? 'bg-gray-955/60 border-gray-800 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-600'
+            }`}>
               {lastSmsMessage.text}
             </p>
             <Link 
@@ -539,7 +542,7 @@ export default function MechanicDashboard() {
 
         {/* Tax Warning Banner */}
         {showTaxWarning && (
-          <div className="p-4 rounded-xl border bg-amber-50 border-amber-200 text-amber-800 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs transition-all duration-200">
+          <div className="p-4 rounded-xl border bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs transition-all duration-200">
             <div className="flex items-center gap-2.5 text-xs font-bold leading-normal text-center sm:text-left">
               <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 animate-[bounce_2s_infinite]" />
               <span>
@@ -551,7 +554,7 @@ export default function MechanicDashboard() {
                 onClick={() => {
                   setIsSettingsOpen(true);
                 }}
-                className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs"
+                className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-750 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs"
               >
                 Configure
               </button>
@@ -561,7 +564,7 @@ export default function MechanicDashboard() {
                   setShopProvinceSetting('AB');
                   setShowTaxWarning(false);
                 }}
-                className="px-2.5 py-1.5 border border-amber-300 text-amber-700 hover:bg-amber-100 rounded-lg text-[10px] font-bold transition-all"
+                className="px-2.5 py-1.5 border border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 rounded-lg text-[10px] font-bold transition-all"
               >
                 Dismiss
               </button>
@@ -570,7 +573,7 @@ export default function MechanicDashboard() {
         )}
 
         {/* Search & Filter Bar */}
-        <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
+        <div className={`flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center`}>
           {/* Search Input */}
           <div className="relative flex-1">
             <input
@@ -578,15 +581,21 @@ export default function MechanicDashboard() {
               placeholder="Search VIN, vehicle, phone..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-11 pl-10 pr-9 text-sm rounded-xl border border-gray-200 text-gray-800 bg-white placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all shadow-sm"
+              className={`w-full h-11 pl-10 pr-9 text-sm rounded-xl border focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all ${
+                isDark 
+                  ? 'bg-gray-900/60 border-gray-800 text-white placeholder-gray-500' 
+                  : 'bg-white border-gray-200 text-gray-800 placeholder-gray-400 shadow-sm'
+              }`}
             />
-            <span className="absolute left-3.5 top-3.5 text-gray-400">
+            <span className={`absolute left-3.5 top-3.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </span>
             {searchQuery && (
               <button 
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-2.5 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                className={`absolute right-3 top-2.5 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                  isDark ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
+                }`}
               >
                 &times;
               </button>
@@ -597,7 +606,11 @@ export default function MechanicDashboard() {
           <select
             value={advisorFilter}
             onChange={(e) => setAdvisorFilter(e.target.value)}
-            className="h-11 px-3 text-xs font-bold rounded-xl border border-gray-200 bg-white text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all sm:w-44 shadow-sm"
+            className={`h-11 px-3 text-xs font-bold rounded-xl border focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all sm:w-44 ${
+              isDark 
+                ? 'bg-gray-900/60 border-gray-800 text-gray-200' 
+                : 'bg-white border-gray-200 text-gray-700 shadow-sm'
+            }`}
           >
             <option value="all">All Advisors</option>
             {availableAdvisors.map((adv) => (
@@ -607,20 +620,26 @@ export default function MechanicDashboard() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-1 p-1 rounded-xl mt-4 mb-1 select-none bg-gray-100 border border-gray-200/60">
+        <div className={`flex items-center gap-1 p-1 rounded-xl mt-4 mb-1 select-none ${
+          isDark ? 'bg-gray-900/40 border border-gray-800/80' : 'bg-gray-100 border border-gray-200/60'
+        }`}>
           <button
             onClick={() => setActiveTab('active')}
             className={`flex-1 py-2.5 px-4 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
               activeTab === 'active'
-                ? 'bg-white text-gray-900 shadow-sm border border-gray-200/80'
-                : 'text-gray-500 hover:text-gray-700'
+                ? isDark
+                  ? 'bg-gray-800 text-white shadow-md shadow-black/20 border border-gray-700/50'
+                  : 'bg-white text-gray-900 shadow-sm border border-gray-200/80'
+                : isDark
+                  ? 'text-gray-500 hover:text-gray-300'
+                  : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             <span>Active</span>
             <span className={`text-[10px] min-w-[20px] px-1.5 py-0.5 rounded-full font-bold leading-none ${
               activeTab === 'active'
                 ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-600'
+                : isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-200 text-gray-500'
             }`}>
               {awaitingInspection.length + sentToCustomer.length + approvedReady.length + declined.length}
             </span>
@@ -629,15 +648,19 @@ export default function MechanicDashboard() {
             onClick={() => setActiveTab('archived')}
             className={`flex-1 py-2.5 px-4 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
               activeTab === 'archived'
-                ? 'bg-white text-gray-900 shadow-sm border border-gray-200/80'
-                : 'text-gray-500 hover:text-gray-700'
+                ? isDark
+                  ? 'bg-gray-800 text-white shadow-md shadow-black/20 border border-gray-700/50'
+                  : 'bg-white text-gray-900 shadow-sm border border-gray-200/80'
+                : isDark
+                  ? 'text-gray-500 hover:text-gray-300'
+                  : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             <span>Archived</span>
             <span className={`text-[10px] min-w-[20px] px-1.5 py-0.5 rounded-full font-bold leading-none ${
               activeTab === 'archived'
                 ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-600'
+                : isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-200 text-gray-500'
             }`}>
               {archived.length}
             </span>
@@ -808,7 +831,6 @@ export default function MechanicDashboard() {
                     item={i} 
                     isDark={isDark} 
                     formatCost={formatCost}
-                    onResendSms={handleResendSms}
                   />
                 ))}
               </div>
@@ -929,6 +951,48 @@ export default function MechanicDashboard() {
                 </p>
               </div>
 
+              {/* Theme Selector */}
+              <div>
+                <label className={`block text-[10px] font-bold uppercase tracking-wider mb-1.5 ${
+                  isDark ? 'text-gray-400' : 'text-gray-500'
+                }`}>
+                  Theme Mode
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsDark(false);
+                      localStorage.setItem('shopsnap_mechanic_theme', 'light');
+                    }}
+                    className={`flex-1 h-9 rounded-lg text-xs font-bold border transition-colors flex items-center justify-center gap-1.5 ${
+                      !isDark 
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-xs' 
+                        : (isDark 
+                            ? 'bg-gray-800 border-gray-700 text-gray-300 hover:text-white' 
+                            : 'bg-gray-50 border-gray-250 text-gray-600')
+                    }`}
+                  >
+                    <Sun className="w-3.5 h-3.5" />
+                    <span>Light Mode</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsDark(true);
+                      localStorage.setItem('shopsnap_mechanic_theme', 'dark');
+                    }}
+                    className={`flex-1 h-9 rounded-lg text-xs font-bold border transition-colors flex items-center justify-center gap-1.5 ${
+                      isDark 
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-xs' 
+                        : 'bg-white border-gray-300 text-gray-750 hover:border-gray-400'
+                    }`}
+                  >
+                    <Moon className="w-3.5 h-3.5" />
+                    <span>Dark Mode</span>
+                  </button>
+                </div>
+              </div>
 
               {/* Connection Status Switcher */}
               <div>
@@ -1022,13 +1086,12 @@ interface InspectionCardProps {
   onVerbalApproval: (id: string) => void;
   onComplete: (id: string) => void;
   onSendQuoteDirect?: (item: Inspection) => void;
-  onResendSms?: (item: Inspection) => void;
 }
 
-function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, onComplete, onSendQuoteDirect, onResendSms }: InspectionCardProps) {
+function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, onComplete, onSendQuoteDirect }: InspectionCardProps) {
   const urgencyColor = {
-    URGENT: isDark ? 'bg-red-500/10 text-red-400 border-red-900/30' : 'bg-red-50 text-red-650 border-red-100',
-    RECOMMENDED: isDark ? 'bg-amber-500/10 text-amber-400 border-amber-900/30' : 'bg-amber-50 text-amber-650 border-amber-100',
+    URGENT: isDark ? 'bg-red-505/10 text-red-400 border-red-900/30' : 'bg-red-50 text-red-650 border-red-100',
+    RECOMMENDED: isDark ? 'bg-amber-505/10 text-amber-400 border-amber-900/30' : 'bg-amber-50 text-amber-650 border-amber-100',
     MONITOR: isDark ? 'bg-gray-800 text-gray-400 border-gray-700' : 'bg-gray-100 text-gray-600 border-gray-200'
   }[item.urgency];
 
@@ -1039,148 +1102,140 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'AWAITING_INSPECTION':
-        return <Clock className="w-3.5 h-3.5 text-amber-500" />;
+        return <Clock className="w-4 h-4 text-amber-550" />;
       case 'SENT':
-        return <Send className="w-3.5 h-3.5 text-blue-500" />;
+        return <Send className="w-4 h-4 text-blue-500" />;
       case 'APPROVED':
-        return <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />;
+        return <CheckCircle className="w-4 h-4 text-emerald-505" />;
       case 'DECLINED':
-        return <XCircle className="w-3.5 h-3.5 text-red-500" />;
+        return <XCircle className="w-4 h-4 text-red-500" />;
       default:
         return null;
     }
   };
 
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
-  const displayId = item.id.split('-')[1] || item.id.slice(0, 6);
 
   return (
-    <div className="relative rounded-3xl border border-gray-200/90 bg-white p-5 shadow-md hover:shadow-lg transition-all duration-200 flex flex-col justify-between overflow-hidden text-gray-900">
-      {/* Top Receipt Bar */}
-      <div>
-        <div className="flex items-center justify-between pb-2 mb-3 border-b border-dashed border-gray-200 text-[10px] font-bold uppercase tracking-wider">
-          <span className="text-blue-600 flex items-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
-            RECEIPT #{displayId}
-          </span>
-          <div className="flex items-center gap-2">
-            <span className={`px-2 py-0.5 rounded-full border text-[9px] ${urgencyColor}`}>
-              {item.urgency}
-            </span>
-            <button 
-              type="button" 
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="md:hidden text-gray-400 hover:text-gray-600"
-            >
-              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : 'rotate-0'}`} />
-            </button>
-          </div>
-        </div>
+    <div className={`relative rounded-xl border p-4 transition-all overflow-hidden flex flex-col justify-between transition-colors duration-200 ${
+      isDark ? 'bg-[#0f172a] border-gray-850 hover:border-gray-700' : 'bg-white border-gray-250/80 shadow-xs hover:border-gray-350'
+    }`}>
+      {/* Left indicator stripe */}
+      <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+        item.urgency === 'URGENT' ? 'bg-red-500' : item.urgency === 'RECOMMENDED' ? 'bg-amber-500' : 'bg-gray-400'
+      }`} />
 
-        {/* Vehicle Information */}
+      <div className="pl-1">
+        {/* Clickable Header area on mobile */}
         <div 
           onClick={() => setIsExpanded(!isExpanded)}
-          className="cursor-pointer md:cursor-default"
+          className="flex items-start justify-between cursor-pointer md:cursor-default"
         >
-          <h3 className="font-extrabold text-base tracking-tight leading-tight text-gray-900">
-            {item.vehicleYear} {item.vehicleMake} {item.vehicleModel}
-          </h3>
-
-          <div className={`md:block space-y-1 mt-1.5 ${isExpanded ? 'block' : 'hidden'}`}>
-            <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
-              <Phone className="w-3 h-3 text-gray-400 shrink-0" />
-              <span>{item.customerPhone}</span>
-            </div>
-
-            <div className="flex items-center gap-2 flex-wrap pt-0.5">
+          <div>
+            <h3 className={`font-bold text-base ${isDark ? 'text-gray-200' : 'text-gray-850'}`}>
+              {item.vehicleYear} {item.vehicleMake} {item.vehicleModel}
+            </h3>
+            
+            {/* Phone, VIN, Advisor: hidden on mobile unless expanded */}
+            <div className={`md:block ${isExpanded ? 'block' : 'hidden'}`}>
+              <div className="flex items-center gap-1.5 mt-1.5 text-xs text-gray-450">
+                <Phone className="w-3 h-3 text-gray-455 shrink-0" />
+                <span>{item.customerPhone}</span>
+              </div>
               {item.vin && (
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md border border-blue-100">
-                  VIN: {item.vin}
-                </span>
+                <div className="flex items-center gap-1.5 mt-1.5 text-[10px] font-mono uppercase tracking-wider text-blue-500 font-semibold">
+                  <span className="text-[9px] font-bold bg-blue-500/10 px-1 py-0.5 rounded border border-blue-500/20">VIN</span>
+                  <span>{item.vin}</span>
+                </div>
               )}
               {item.advisorName && (
-                <span className="text-[10px] font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md">
-                  Adv: {item.advisorName}
-                </span>
+                <div className={`flex items-center gap-1 mt-1.5 text-[10px] font-semibold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                    isDark ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-700'
+                  }`}>
+                    Advisor: {item.advisorName}
+                  </span>
+                </div>
               )}
             </div>
+          </div>
+          
+          <div className="flex items-center gap-2.5">
+            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider ${urgencyColor}`}>
+              {item.urgency}
+            </span>
+            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 md:hidden ${
+              isExpanded ? 'rotate-180' : 'rotate-0'
+            }`} />
           </div>
         </div>
 
-        {/* Receipt Dotted Separator */}
-        <div className="my-3 border-t border-dashed border-gray-200" />
-
-        {/* Itemized Services Breakdown */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            <span className="flex items-center gap-1">
-              <Wrench className="w-3 h-3 text-gray-400" />
-              <span>Required Services</span>
-            </span>
-            <span>Est. Cost</span>
-          </div>
-
-          <div className="space-y-1.5 pt-1">
-            {item.items && item.items.length > 0 ? (
-              item.items.map((line, idx) => (
+        {/* Details - Always visible */}
+        <div className="mt-3.5 space-y-2">
+          {item.items && item.items.length > 0 ? (
+            <div className="space-y-1">
+              {item.items.map((line, idx) => (
                 <div key={idx} className="flex items-start justify-between text-xs gap-2">
-                  <div className="flex items-start gap-1.5 min-w-0">
-                    <span className="text-gray-400 shrink-0">•</span>
-                    <span className="font-semibold leading-snug line-clamp-1 text-gray-800">{line.name}</span>
-                  </div>
-                  <span className="font-mono text-xs font-bold shrink-0 text-gray-900">{formatCost(line.cost)}</span>
+                  <span className={`font-bold leading-tight ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    • {line.name}
+                  </span>
+                  <span className={`font-mono text-[10px] shrink-0 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {formatCost(line.cost)}
+                  </span>
                 </div>
-              ))
-            ) : (
-              <div className="flex items-start justify-between text-xs">
-                <span className="font-semibold line-clamp-1 text-gray-800">{item.repairName}</span>
-                <span className="font-mono text-xs font-bold text-gray-900">{formatCost(item.estimatedCost)}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Subtotal Total Box */}
-          <div className="mt-3 p-2.5 rounded-2xl bg-gray-50 border border-gray-150 flex items-center justify-between">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-500">Total Estimate</span>
-            <span className="text-base font-black text-blue-600">{formatCost(item.estimatedCost)}</span>
+              ))}
+            </div>
+          ) : (
+            <p className={`text-sm font-bold line-clamp-1 ${isDark ? 'text-gray-300' : 'text-gray-750'}`}>{item.repairName}</p>
+          )}
+          <div className={`flex items-center justify-between text-xs pt-2 border-t border-dashed ${
+            isDark ? 'border-gray-800' : 'border-gray-150'
+          }`}>
+            <span className="text-gray-405 font-bold uppercase tracking-wider text-[9px]">Total Estimate:</span>
+            <span className={`font-black text-sm ${isDark ? 'text-gray-100' : 'text-blue-600'}`}>{formatCost(item.estimatedCost)}</span>
           </div>
         </div>
       </div>
 
-      {/* Card Action Footer */}
-      <div className={`border-t mt-4 pt-3 flex flex-col gap-2.5 md:flex ${
+      {/* Action Footer Button Group - hidden on mobile unless expanded */}
+      <div className={`border-t mt-4 pt-3 flex flex-col gap-2 pl-1 md:flex ${
         isExpanded ? 'flex' : 'hidden'
-      } border-gray-150`}>
-        {/* Status Header line */}
+      } ${
+        isDark ? 'border-gray-800/80' : 'border-gray-150'
+      }`}>
         <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-gray-500">
           <span className="flex items-center gap-1.5">
             {getStatusIcon(item.status)}
             <span>{item.status.replace('_', ' ')}</span>
           </span>
 
-          {item.status === 'APPROVED' && item.signature && (
-            <span className="text-[9px] font-mono text-emerald-600 font-bold normal-case">
-              Signed by: {item.signature}
-            </span>
+          {item.status === 'APPROVED' && (
+            <div className="text-right text-[9px] font-mono text-gray-405 normal-case">
+              <span>{item.signature}</span>
+            </div>
           )}
         </div>
 
-        {/* Action Button Row */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Dashboard Actions Context */}
+        <div className="flex items-center gap-2 mt-1">
           {item.status === 'AWAITING_INSPECTION' && (
             <div className="flex items-center gap-2 w-full">
               <Link
                 href={`/dashboard/new?id=${item.id}`}
-                className="flex-1 h-10 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors shadow-2xs"
+                className={`flex-1 h-9 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
+                  isDark 
+                    ? 'bg-gray-800 border-gray-700 text-gray-350 hover:bg-gray-750 hover:text-white' 
+                    : 'bg-gray-50 border-gray-250 text-gray-700 hover:bg-gray-105 hover:text-gray-900 shadow-xs'
+                }`}
               >
-                <Camera className="w-3.5 h-3.5 text-blue-600" />
+                <Camera className="w-3.5 h-3.5 text-blue-500" />
                 <span>{item.videoUrl ? 'Edit Jobs' : 'Diagnose & Record'}</span>
               </Link>
               {item.videoUrl && onSendQuoteDirect && (
                 <button
                   type="button"
                   onClick={() => onSendQuoteDirect(item)}
-                  className="flex-1 h-10 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center justify-center gap-1.5 border border-blue-500/20 shadow-xs animate-pulse"
+                  className="flex-1 h-9 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-705 text-white transition-all flex items-center justify-center gap-1.5 border border-blue-500/20 shadow-xs animate-pulse"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>Send Quote</span>
@@ -1190,78 +1245,81 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
           )}
 
           {item.status === 'SENT' && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full">
-              {/* Edit Jobs */}
+            <>
+              {/* Edit / Add Jobs Button */}
               <Link
                 href={`/dashboard/new?id=${item.id}`}
-                className="h-9 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1 border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors shadow-2xs"
+                className={`flex-1 h-9 rounded-lg text-[10px] font-extrabold flex items-center justify-center gap-1 border transition-all ${
+                  isDark 
+                    ? 'bg-gray-800 border-gray-700 text-gray-350 hover:bg-gray-750 hover:text-white' 
+                    : 'bg-gray-50 border-gray-305 text-gray-750 hover:bg-gray-100 hover:text-gray-900 shadow-xs'
+                }`}
               >
-                <Wrench className="w-3 h-3 text-blue-600" />
+                <Wrench className="w-3 h-3 text-blue-500" />
                 <span>Edit Jobs</span>
               </Link>
 
-              {/* Resend Text */}
-              <button 
-                type="button"
-                onClick={() => onResendSms ? onResendSms(item) : onCopyLink(item.id)}
-                className="h-9 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white transition-colors shadow-xs"
-              >
-                <Send className="w-3 h-3" />
-                <span>Resend Text</span>
-              </button>
-
-              {/* Copy Link */}
+              {/* Resend/Copy Quote Link */}
               <button 
                 type="button"
                 onClick={() => onCopyLink(item.id)}
-                className={`h-9 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1 border transition-colors ${
+                className={`flex-1 h-9 rounded-lg text-[10px] font-extrabold flex items-center justify-center gap-1 border transition-all ${
                   copiedId === item.id 
                     ? 'bg-emerald-600 border-emerald-500 text-white' 
-                    : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'
+                    : (isDark 
+                        ? 'bg-gray-800/40 border-gray-700 text-gray-350 hover:bg-gray-800 hover:text-white' 
+                        : 'bg-gray-100 border-gray-250 text-gray-605 hover:bg-gray-200 hover:text-gray-900')
                 }`}
               >
-                {copiedId === item.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                <span>{copiedId === item.id ? 'Copied!' : 'Copy Link'}</span>
+                {copiedId === item.id ? (
+                  <>
+                    <Check className="w-3 h-3" />
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3 h-3" />
+                    <span>Copy Link</span>
+                  </>
+                )}
               </button>
 
-              {/* Close Out */}
+              {/* Log Verbal Phone Approval */}
               <button
                 type="button"
-                onClick={() => onComplete(item.id)}
-                className="h-9 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1 border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                onClick={() => onVerbalApproval(item.id)}
+                className={`flex-1 h-9 rounded-lg text-[10px] font-extrabold flex items-center justify-center gap-1 border transition-all ${
+                  isDark 
+                    ? 'bg-blue-600/10 border-blue-500/20 text-blue-400 hover:bg-blue-600/20' 
+                    : 'bg-blue-50 border-blue-200 text-blue-650 hover:bg-blue-100'
+                }`}
               >
-                <Archive className="w-3 h-3" />
-                <span>Close Out</span>
+                <UserCheck className="w-3 h-3" />
+                <span>Phone Auth</span>
               </button>
-            </div>
+            </>
           )}
 
           {item.status === 'APPROVED' && (
             <div className="flex items-center gap-2 w-full">
               <Link
                 href={`/dashboard/new?id=${item.id}`}
-                className="flex-1 h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors shadow-2xs"
+                className={`flex-1 h-9 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
+                  isDark 
+                    ? 'bg-gray-800 border-gray-700 text-gray-350 hover:bg-gray-750 hover:text-white' 
+                    : 'bg-gray-50 border-gray-305 text-gray-700 hover:bg-gray-105 hover:text-gray-900 shadow-xs'
+                }`}
               >
-                <Wrench className="w-3.5 h-3.5 text-blue-600" />
+                <Wrench className="w-3.5 h-3.5 text-blue-500" />
                 <span>Edit Jobs</span>
               </Link>
-              {onResendSms && (
-                <button
-                  type="button"
-                  onClick={() => onResendSms(item)}
-                  className="flex-1 h-9 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center justify-center gap-1 border border-blue-500/20 shadow-xs"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Resend Receipt</span>
-                </button>
-              )}
               <button
                 type="button"
                 onClick={() => onComplete(item.id)}
-                className="flex-1 h-9 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors flex items-center justify-center gap-1 border border-emerald-600/20 shadow-xs"
+                className="flex-1 h-9 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all flex items-center justify-center gap-1 border border-emerald-600/20 shadow-xs"
               >
                 <CheckCircle className="w-3.5 h-3.5" />
-                <span>Close Out</span>
+                <span>Complete Repair</span>
               </button>
             </div>
           )}
@@ -1270,30 +1328,37 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
             <div className="flex items-center gap-2 w-full">
               <Link
                 href={`/dashboard/new?id=${item.id}`}
-                className="flex-1 h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors shadow-2xs"
+                className={`flex-1 h-9 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
+                  isDark 
+                    ? 'bg-gray-800 border-gray-700 text-gray-350 hover:bg-gray-750 hover:text-white' 
+                    : 'bg-gray-50 border-gray-305 text-gray-700 hover:bg-gray-105 hover:text-gray-900 shadow-xs'
+                }`}
               >
-                <Wrench className="w-3.5 h-3.5 text-blue-600" />
+                <Wrench className="w-3.5 h-3.5 text-blue-500" />
                 <span>Edit Jobs</span>
               </Link>
-              {onResendSms && (
-                <button
-                  type="button"
-                  onClick={() => onResendSms(item)}
-                  className="flex-1 h-9 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center justify-center gap-1 border border-blue-500/20 shadow-xs"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Resend Quote</span>
-                </button>
-              )}
               <button
                 type="button"
-                onClick={() => onComplete(item.id)}
-                className="flex-1 h-9 rounded-xl text-xs font-bold border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors flex items-center justify-center gap-1 shadow-2xs"
+                onClick={() => onComplete(item.id)} // Clean it up as well
+                className={`flex-1 h-9 rounded-lg text-xs font-bold border transition-colors ${
+                  isDark 
+                    ? 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-750 hover:text-white' 
+                    : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+                }`}
               >
-                <Archive className="w-3.5 h-3.5" />
-                <span>Close Out</span>
+                <span>Clear Card</span>
               </button>
             </div>
+          )}
+
+          {item.status === 'AWAITING_INSPECTION' && (
+            <Link
+              href="/dashboard/new"
+              className="w-full h-9 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white transition-all flex items-center justify-center gap-1"
+            >
+              <Clock className="w-3.5 h-3.5" />
+              <span>Record Inspection Video</span>
+            </Link>
           )}
         </div>
       </div>
@@ -1309,10 +1374,9 @@ interface ArchivedCardProps {
   item: Inspection;
   isDark: boolean;
   formatCost: (val: number) => string;
-  onResendSms?: (item: Inspection) => void;
 }
 
-function ArchivedCard({ item, isDark, formatCost, onResendSms }: ArchivedCardProps) {
+function ArchivedCard({ item, isDark, formatCost }: ArchivedCardProps) {
   const formattedDate = new Date(item.updatedAt || item.createdAt).toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
@@ -1320,100 +1384,108 @@ function ArchivedCard({ item, isDark, formatCost, onResendSms }: ArchivedCardPro
     hour: '2-digit',
     minute: '2-digit'
   });
-  const displayId = item.id.split('-')[1] || item.id.slice(0, 6);
 
   return (
-    <div className="relative rounded-3xl border border-gray-200/90 bg-white p-5 shadow-md hover:shadow-lg transition-all duration-200 flex flex-col justify-between overflow-hidden text-gray-900">
-      <div>
-        <div className="flex items-center justify-between pb-2 mb-3 border-b border-dashed border-gray-200 text-[10px] font-bold uppercase tracking-wider">
-          <span className="text-gray-500 flex items-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-gray-400" />
-            ARCHIVED RECEIPT #{displayId}
-          </span>
-          <span className="px-2 py-0.5 rounded-full border border-gray-200 bg-gray-100 text-gray-600 text-[9px] font-bold">
-            CLOSED OUT
-          </span>
-        </div>
-
-        <h3 className="font-extrabold text-base tracking-tight leading-tight text-gray-900">
-          {item.vehicleYear} {item.vehicleMake} {item.vehicleModel}
-        </h3>
-
-        <div className="flex items-center gap-2 flex-wrap mt-1.5">
-          <span className="text-xs text-gray-500 flex items-center gap-1 font-medium">
-            <Phone className="w-3 h-3 text-gray-400" /> {item.customerPhone}
-          </span>
-          {item.vin && (
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md border border-blue-100">
-              VIN: {item.vin}
-            </span>
-          )}
-        </div>
-
-        <div className="my-3 border-t border-dashed border-gray-200" />
-
-        {/* Itemized breakdown */}
-        <div className="space-y-1.5">
-          {item.items && item.items.length > 0 ? (
-            item.items.map((line, idx) => (
-              <div key={idx} className="flex items-start justify-between text-xs gap-2">
-                <span className="font-semibold leading-snug line-clamp-1 text-gray-800">• {line.name}</span>
-                <span className="font-mono text-xs font-bold text-gray-900">{formatCost(line.cost)}</span>
-              </div>
-            ))
-          ) : (
-            <div className="flex items-start justify-between text-xs">
-              <span className="font-semibold line-clamp-1 text-gray-800">{item.repairName}</span>
-              <span className="font-mono text-xs font-bold text-gray-900">{formatCost(item.estimatedCost)}</span>
+    <div className={`relative rounded-xl border p-4 transition-colors duration-200 overflow-hidden flex flex-col justify-between ${
+      isDark ? 'bg-[#0f172a]/65 border-gray-850' : 'bg-white border-gray-250/80 shadow-xs'
+    }`}>
+      {/* Indicator Stripe */}
+      <div className="absolute left-0 top-0 bottom-0 w-1 bg-slate-500" />
+      
+      <div className="pl-1">
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className={`font-bold text-base ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+              {item.vehicleYear} {item.vehicleMake} {item.vehicleModel}
+            </h3>
+            <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-450">
+              <Phone className="w-3 h-3 text-gray-450 shrink-0" />
+              <span>{item.customerPhone}</span>
             </div>
-          )}
+            {item.vin && (
+              <div className="flex items-center gap-1.5 mt-1.5 text-[10px] font-mono uppercase tracking-wider text-blue-500 font-semibold">
+                <span className="text-[9px] font-bold bg-blue-500/10 px-1 py-0.5 rounded border border-blue-500/20">VIN</span>
+                <span>{item.vin}</span>
+              </div>
+            )}
+            {item.advisorName && (
+              <div className={`flex items-center gap-1 mt-1.5 text-[10px] font-semibold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                  isDark ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-700'
+                }`}>
+                  Advisor: {item.advisorName}
+                </span>
+              </div>
+            )}
+          </div>
+          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider ${
+            isDark ? 'bg-slate-500/10 text-slate-400 border-slate-900/30' : 'bg-slate-100 text-slate-700 border-slate-200'
+          }`}>
+            Archived
+          </span>
+        </div>
 
-          <div className="mt-3 p-2.5 rounded-2xl bg-gray-50 border border-gray-150 flex items-center justify-between">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-500">Archived Total</span>
-            <span className="text-base font-black text-gray-900">{formatCost(item.estimatedCost)}</span>
+        {/* Details */}
+        <div className="mt-3.5 space-y-2">
+          {item.items && item.items.length > 0 ? (
+            <div className="space-y-1">
+              {item.items.map((line, idx) => (
+                <div key={idx} className="flex items-start justify-between text-xs gap-2">
+                  <span className={`font-bold leading-tight ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    • {line.name}
+                  </span>
+                  <span className={`font-mono text-[10px] shrink-0 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {formatCost(line.cost)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className={`text-sm font-bold line-clamp-1 ${isDark ? 'text-gray-300' : 'text-gray-750'}`}>{item.repairName}</p>
+          )}
+          <div className={`flex items-center justify-between text-xs pt-2 border-t border-dashed ${
+            isDark ? 'border-gray-800' : 'border-gray-150'
+          }`}>
+            <span className="text-gray-405 font-bold uppercase tracking-wider text-[9px]">Total Estimate:</span>
+            <span className={`font-black text-sm ${isDark ? 'text-gray-100' : 'text-blue-600'}`}>{formatCost(item.estimatedCost)}</span>
           </div>
         </div>
       </div>
 
-      <div className="border-t mt-4 pt-3 space-y-2 border-gray-150">
-        <div className="flex items-center justify-between text-[10px] text-gray-500">
-          <span className="font-semibold uppercase tracking-wider">Date Closed</span>
+      <div className={`border-t mt-4 pt-3 flex flex-col gap-1.5 pl-1 ${
+        isDark ? 'border-gray-800/80' : 'border-gray-150'
+      }`}>
+        <div className="flex items-center justify-between text-[9px] text-gray-500">
+          <span className="font-semibold uppercase tracking-wider">Date & Time</span>
           <span className="font-mono">{formattedDate}</span>
         </div>
 
         {item.signature ? (
-          <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-bold uppercase tracking-wider">
+          <div className="flex items-center gap-1 text-[9px] text-emerald-500 font-bold uppercase tracking-wider">
             <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
             <span>Approved by {item.signature}</span>
           </div>
         ) : (
-          <div className="flex items-center gap-1 text-[10px] text-red-500 font-bold uppercase tracking-wider">
+          <div className="flex items-center gap-1 text-[9px] text-red-500 font-bold uppercase tracking-wider">
             <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />
             <span>Declined / Cleared</span>
           </div>
         )}
 
-        <div className="flex items-center gap-2 pt-1">
-          <Link
-            href={`/quote/${item.id}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 h-9 rounded-xl text-xs font-bold border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
-          >
-            <ExternalLink className="w-3.5 h-3.5 text-blue-500" />
-            <span>View Receipt</span>
-          </Link>
-          {onResendSms && (
-            <button
-              type="button"
-              onClick={() => onResendSms(item)}
-              className="flex-1 h-9 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center justify-center gap-1.5 shadow-xs border border-blue-500/30"
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span>Resend Text</span>
-            </button>
-          )}
-        </div>
+        {/* View Customer Receipt Link */}
+        <Link
+          href={`/quote/${item.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`w-full h-8 mt-2 rounded-lg text-[10px] font-bold border transition-colors flex items-center justify-center gap-1 ${
+            isDark 
+              ? 'bg-gray-800/40 border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white' 
+              : 'bg-gray-50 border-gray-250 text-gray-750 hover:bg-gray-100 hover:text-gray-900'
+          }`}
+        >
+          <ExternalLink className="w-3 h-3" />
+          <span>View Customer Receipt</span>
+        </Link>
       </div>
     </div>
   );

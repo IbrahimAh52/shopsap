@@ -231,10 +231,18 @@ function NewInspectionForm() {
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const isDark = false;
 
-  // Monitor network status
+  // Theme state: reads saved preference immediately
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('shopsnap_mechanic_theme') === 'dark';
+    }
+    return false;
+  });
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Monitor network and load theme settings
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setIsOnline(navigator.onLine);
@@ -243,12 +251,26 @@ function NewInspectionForm() {
       window.addEventListener('online', goOnline);
       window.addEventListener('offline', goOffline);
 
+      // Load saved mechanic theme
+      const savedTheme = localStorage.getItem('shopsnap_mechanic_theme');
+      if (savedTheme === 'dark') {
+        setIsDark(true);
+      } else {
+        setIsDark(false);
+      }
+
       return () => {
         window.removeEventListener('online', goOnline);
         window.removeEventListener('offline', goOffline);
       };
     }
   }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = !isDark;
+    setIsDark(nextTheme);
+    localStorage.setItem('shopsnap_mechanic_theme', nextTheme ? 'dark' : 'light');
+  };
 
   // Handle native camera video capture
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -439,22 +461,41 @@ function NewInspectionForm() {
   }
 
   return (
-    <div className="flex flex-col flex-1 min-h-screen pb-16 bg-gray-50 text-gray-900 font-sans antialiased">
+    <div className={`flex flex-col flex-1 min-h-screen pb-16 transition-colors duration-200 ${
+      isDark ? 'bg-[#070b13] text-gray-100' : 'bg-gray-50 text-gray-900'
+    }`}>
       {/* Header */}
-      <header className="sticky top-0 z-40 px-4 pb-3 pt-safe flex items-center justify-between bg-white border-b border-gray-200/80 shadow-xs">
+      <header className={`sticky top-0 z-40 px-4 pb-3 pt-safe flex items-center justify-between border-b transition-colors duration-200 ${
+        isDark ? 'bg-[#0e1726]/90 border-gray-805/80 backdrop-blur' : 'bg-white border-gray-250/80 shadow-xs'
+      }`}>
         <div className="flex items-center gap-3">
-          <Link href="/dashboard" className="p-2 -ml-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors">
+          <Link href="/dashboard" className={`p-2 -ml-2 rounded-lg transition-colors ${
+            isDark ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+          }`}>
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-sm font-bold text-gray-800">New Inspection</h1>
-            <p className="text-[9px] font-semibold uppercase tracking-wider text-gray-400">
+            <h1 className={`text-sm font-bold ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>New Inspection</h1>
+            <p className={`text-[9px] font-semibold uppercase tracking-wider ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
               Record Damage
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Light/Dark Toggle */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className={`p-2 rounded-xl border transition-colors ${
+              isDark 
+                ? 'bg-gray-800/40 border-gray-700 text-gray-300 hover:text-white hover:bg-gray-750' 
+                : 'bg-gray-100 border-gray-300 text-gray-600 hover:text-gray-900 hover:bg-gray-205'
+            }`}
+            aria-label="Toggle theme"
+          >
+            {isDark ? <Sun className="w-4 h-4 text-yellow-450" /> : <Moon className="w-4 h-4" />}
+          </button>
 
           {isOnline ? (
             <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
@@ -890,7 +931,11 @@ function NewInspectionForm() {
               type="button"
               disabled={isSubmitting}
               onClick={(e) => handleSubmit(e, 'draft')}
-              className="flex-1 h-14 rounded-2xl font-bold transition-all active:scale-[0.99] flex items-center justify-center gap-2 border text-base shadow-sm bg-gray-50 hover:bg-gray-100 border-gray-300 text-gray-700"
+              className={`flex-1 h-14 rounded-2xl font-bold transition-all active:scale-[0.99] flex items-center justify-center gap-2 border text-base shadow-sm ${
+                isDark 
+                  ? 'bg-gray-800 hover:bg-gray-750 border-gray-700 text-gray-300' 
+                  : 'bg-gray-50 hover:bg-gray-100 border-gray-300 text-gray-700'
+              }`}
             >
               {isSubmitting ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -1333,7 +1378,7 @@ function VinScannerModal({ isOpen, onClose, onDecode, isDark }: VinScannerModalP
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="relative w-4/5 h-1/3 border-2 border-dashed border-emerald-400/80 rounded-lg flex items-center justify-center shadow-[0_0_20px_rgba(52,211,153,0.15)] animate-glow">
                         {/* Laser line animation */}
-                        <div className="absolute left-0 right-0 h-[2px] bg-emerald-500 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-laser" />
+                        <div className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-laser" />
                         
                         {/* Status label inside */}
                         <span className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-400 bg-black/70 px-2 py-0.5 rounded border border-emerald-500/20">
