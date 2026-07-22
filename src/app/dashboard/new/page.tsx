@@ -1333,7 +1333,7 @@ function VinScannerModal({ isOpen, onClose, onDecode, isDark }: VinScannerModalP
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="relative w-4/5 h-1/3 border-2 border-dashed border-emerald-400/80 rounded-lg flex items-center justify-center shadow-[0_0_20px_rgba(52,211,153,0.15)] animate-glow">
                         {/* Laser line animation */}
-                        <div className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-laser" />
+                        <div className="absolute left-0 right-0 h-[2px] bg-emerald-500 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-laser" />
                         
                         {/* Status label inside */}
                         <span className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-400 bg-black/70 px-2 py-0.5 rounded border border-emerald-500/20">

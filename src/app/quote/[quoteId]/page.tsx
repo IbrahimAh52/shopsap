@@ -179,7 +179,7 @@ export default function CustomerQuotePortal() {
       {/* Brand Shop Header */}
       <header className="px-4 py-3 bg-white border-b border-gray-200/80 flex items-center justify-between shadow-xs">
         <div className="flex items-center gap-2">
-          <div className="relative w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-650 flex items-center justify-center text-white shadow-xs">
+          <div className="relative w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-xs">
             <Wrench className="w-4 h-4" />
           </div>
           <span className="text-base font-bold tracking-tight text-gray-900">
@@ -222,7 +222,7 @@ export default function CustomerQuotePortal() {
         {/* Structured Transaction Receipt */}
         <div className="bg-white rounded-3xl border border-gray-200/80 shadow-md overflow-hidden relative">
           {/* Top Tear Decoration */}
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-b from-gray-100 to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gray-200/60" />
           
           <div className="p-5 space-y-5">
             {/* Section: Vehicle Info */}
@@ -358,7 +358,7 @@ export default function CustomerQuotePortal() {
                 <button
                   type="button"
                   onClick={() => setShowSignatureModal(true)}
-                  className="w-full h-14 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-base rounded-2xl shadow-lg shadow-emerald-600/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-emerald-500/20"
+                  className="w-full h-14 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-base rounded-2xl shadow-sm active:scale-[0.98] transition-colors flex items-center justify-center gap-2 border border-emerald-500/20"
                 >
                   <CheckCircle className="w-5 h-5 stroke-[2.5]" />
                   <span>Approve & Authorize Fix</span>

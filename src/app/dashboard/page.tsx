@@ -448,7 +448,7 @@ export default function MechanicDashboard() {
       {/* Top Header */}
       <header className="sticky top-0 z-40 px-4 pb-3 pt-safe flex items-center justify-between bg-white border-b border-gray-200/80 shadow-xs">
         <div className="flex items-center gap-2">
-          <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-650 flex items-center justify-center text-white shadow-md shadow-blue-500/10">
+          <div className="relative w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-xs">
             <Settings className="w-5 h-5 animate-[spin_10s_linear_infinite]" />
             <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border border-white flex items-center justify-center text-white">
               <Check className="w-2.5 h-2.5 stroke-[3.5]" />
@@ -1180,7 +1180,7 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
                 <button
                   type="button"
                   onClick={() => onSendQuoteDirect(item)}
-                  className="flex-1 h-10 rounded-xl text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white transition-all flex items-center justify-center gap-1.5 border border-blue-500/20 shadow-sm shadow-blue-500/20 animate-pulse"
+                  className="flex-1 h-10 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center justify-center gap-1.5 border border-blue-500/20 shadow-xs animate-pulse"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>Send Quote</span>
@@ -1204,7 +1204,7 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
               <button 
                 type="button"
                 onClick={() => onResendSms ? onResendSms(item) : onCopyLink(item.id)}
-                className="h-9 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white transition-all shadow-sm shadow-blue-500/20"
+                className="h-9 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white transition-colors shadow-xs"
               >
                 <Send className="w-3 h-3" />
                 <span>Resend Text</span>
@@ -1249,7 +1249,7 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
                 <button
                   type="button"
                   onClick={() => onResendSms(item)}
-                  className="flex-1 h-9 rounded-xl text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white transition-all flex items-center justify-center gap-1 border border-blue-500/20 shadow-sm shadow-blue-500/20"
+                  className="flex-1 h-9 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center justify-center gap-1 border border-blue-500/20 shadow-xs"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>Resend Receipt</span>
@@ -1258,7 +1258,7 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
               <button
                 type="button"
                 onClick={() => onComplete(item.id)}
-                className="flex-1 h-9 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors flex items-center justify-center gap-1 border border-emerald-600/20 shadow-sm shadow-emerald-500/20"
+                className="flex-1 h-9 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors flex items-center justify-center gap-1 border border-emerald-600/20 shadow-xs"
               >
                 <CheckCircle className="w-3.5 h-3.5" />
                 <span>Close Out</span>
@@ -1279,7 +1279,7 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
                 <button
                   type="button"
                   onClick={() => onResendSms(item)}
-                  className="flex-1 h-9 rounded-xl text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white transition-all flex items-center justify-center gap-1 border border-blue-500/20 shadow-sm shadow-blue-500/20"
+                  className="flex-1 h-9 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center justify-center gap-1 border border-blue-500/20 shadow-xs"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>Resend Quote</span>
@@ -1407,7 +1407,7 @@ function ArchivedCard({ item, isDark, formatCost, onResendSms }: ArchivedCardPro
             <button
               type="button"
               onClick={() => onResendSms(item)}
-              className="flex-1 h-9 rounded-xl text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white transition-all flex items-center justify-center gap-1.5 shadow-sm shadow-blue-500/20 border border-blue-500/30"
+              className="flex-1 h-9 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center justify-center gap-1.5 shadow-xs border border-blue-500/30"
             >
               <Send className="w-3.5 h-3.5" />
               <span>Resend Text</span>
