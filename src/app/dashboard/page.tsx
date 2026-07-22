@@ -63,8 +63,13 @@ export default function MechanicDashboard() {
   const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
 
-  // Theme state: defaults to light (false)
-  const [isDark, setIsDark] = useState<boolean>(false);
+  // Theme state: reads saved preference immediately
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('shopsnap_mechanic_theme') === 'dark';
+    }
+    return false;
+  });
 
   // Search & Tab States
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -72,11 +77,26 @@ export default function MechanicDashboard() {
   const [advisorFilter, setAdvisorFilter] = useState<string>('all');
   const [activeMobileLane, setActiveMobileLane] = useState<'awaiting' | 'sent' | 'approved' | 'declined'>('awaiting');
 
-  // Settings states
+  // Settings states: read saved values immediately so they never flash defaults
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
-  const [shopNameSetting, setShopNameSetting] = useState<string>('ShopSnap');
-  const [shopProvinceSetting, setShopProvinceSetting] = useState<string>('AB');
-  const [showTaxWarning, setShowTaxWarning] = useState<boolean>(false);
+  const [shopNameSetting, setShopNameSetting] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('shopsnap_shop_name') || 'ShopSnap';
+    }
+    return 'ShopSnap';
+  });
+  const [shopProvinceSetting, setShopProvinceSetting] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('shopsnap_shop_province') || 'AB';
+    }
+    return 'AB';
+  });
+  const [showTaxWarning, setShowTaxWarning] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return !localStorage.getItem('shopsnap_shop_province');
+    }
+    return false;
+  });
 
   // Copy state tracker
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -126,21 +146,16 @@ export default function MechanicDashboard() {
       
       // Load saved mechanic theme
       const savedTheme = localStorage.getItem('shopsnap_mechanic_theme');
-      if (savedTheme === 'dark') {
-        setIsDark(true);
-      } else {
-        setIsDark(false);
-      }
+      setIsDark(savedTheme === 'dark');
 
-      // Load saved shop name
+      // Sync settings from localStorage (in case they were set by another tab)
       const savedShop = localStorage.getItem('shopsnap_shop_name');
-      if (savedShop) {
-        setShopNameSetting(savedShop);
-      }
+      if (savedShop) setShopNameSetting(savedShop);
 
       const savedProvince = localStorage.getItem('shopsnap_shop_province');
       if (savedProvince) {
         setShopProvinceSetting(savedProvince);
+        setShowTaxWarning(false);
       } else {
         setShopProvinceSetting('AB');
         setShowTaxWarning(true);
@@ -1040,8 +1055,10 @@ export default function MechanicDashboard() {
                   type="button"
                   onClick={() => {
                     const cleanName = shopNameSetting.trim();
-                    localStorage.setItem('shopsnap_shop_name', cleanName || 'ShopSnap');
+                    const finalName = cleanName || 'ShopSnap';
+                    localStorage.setItem('shopsnap_shop_name', finalName);
                     localStorage.setItem('shopsnap_shop_province', shopProvinceSetting);
+                    setShopNameSetting(finalName);
                     setShowTaxWarning(false);
                     setIsSettingsOpen(false);
                     // Emit storage update event to alert any listening pages

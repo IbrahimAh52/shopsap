@@ -115,8 +115,18 @@ function NewInspectionForm() {
   const [advisorsList, setAdvisorsList] = useState<string[]>([]);
   const [selectedAdvisor, setSelectedAdvisor] = useState<string>('');
   const [isAddingAdvisor, setIsAddingAdvisor] = useState<boolean>(false);
-  const [shopName, setShopName] = useState<string>('');
-  const [province, setProvince] = useState<string>('');
+  const [shopName, setShopName] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('shopsnap_shop_name') || 'ShopSnap';
+    }
+    return 'ShopSnap';
+  });
+  const [province, setProvince] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('shopsnap_shop_province') || 'AB';
+    }
+    return 'AB';
+  });
   const [successSmsUrl, setSuccessSmsUrl] = useState<string | null>(null);
   const [existingVideoUrl, setExistingVideoUrl] = useState<string>('');
 
@@ -222,8 +232,13 @@ function NewInspectionForm() {
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  // Theme state: defaults to light (false)
-  const [isDark, setIsDark] = useState<boolean>(false);
+  // Theme state: reads saved preference immediately
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('shopsnap_mechanic_theme') === 'dark';
+    }
+    return false;
+  });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
