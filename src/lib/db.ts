@@ -1,5 +1,25 @@
 import { createClient } from '@supabase/supabase-js';
 
+function safeBtoa(str: string): string {
+  if (typeof window !== 'undefined' && typeof window.btoa === 'function') {
+    return window.btoa(str);
+  }
+  if (typeof btoa === 'function') {
+    return btoa(str);
+  }
+  return Buffer.from(str, 'binary').toString('base64');
+}
+
+function safeAtob(str: string): string {
+  if (typeof window !== 'undefined' && typeof window.atob === 'function') {
+    return window.atob(str);
+  }
+  if (typeof atob === 'function') {
+    return atob(str);
+  }
+  return Buffer.from(str, 'base64').toString('binary');
+}
+
 export type UrgencyLevel = 'URGENT' | 'RECOMMENDED' | 'MONITOR';
 export type InspectionStatus = 'AWAITING_INSPECTION' | 'SENT' | 'APPROVED' | 'DECLINED' | 'ARCHIVED';
 
@@ -147,7 +167,7 @@ function decodeInspection(row: any): Inspection {
     const match = repairName.match(/\[ITEMS:([A-Za-z0-9+/=]+)\]/i);
     if (match) {
       try {
-        const decodedJson = decodeURIComponent(atob(match[1]));
+        const decodedJson = decodeURIComponent(safeAtob(match[1]));
         items = JSON.parse(decodedJson);
         repairName = repairName.replace(/\[ITEMS:[A-Za-z0-9+/=]+\]/i, '').trim();
       } catch (err) {
@@ -259,7 +279,7 @@ export const db = {
       updatedAt: now,
     };
 
-    const itemsJson = newRecord.items ? btoa(encodeURIComponent(JSON.stringify(newRecord.items))) : '';
+    const itemsJson = newRecord.items ? safeBtoa(encodeURIComponent(JSON.stringify(newRecord.items))) : '';
     const itemsTag = itemsJson ? `[ITEMS:${itemsJson}]` : '';
 
     if (isSupabaseConfigured && supabase) {
@@ -370,12 +390,12 @@ export const db = {
         const targetProvince = updates.province !== undefined ? updates.province : current.province;
         const targetItems = updates.items !== undefined ? updates.items : current.items;
         
-        let cleanRepairName = targetRepairName
+        let cleanRepairName = (targetRepairName || '')
           .replace(/\[PROVINCE:[A-Z]{2,4}\]/i, '')
           .replace(/\[ITEMS:[A-Za-z0-9+/=]+\]/i, '')
           .trim();
           
-        const itemsJson = targetItems ? btoa(encodeURIComponent(JSON.stringify(targetItems))) : '';
+        const itemsJson = targetItems ? safeBtoa(encodeURIComponent(JSON.stringify(targetItems))) : '';
         const itemsTag = itemsJson ? `[ITEMS:${itemsJson}]` : '';
         
         dbUpdates.repair_name = cleanRepairName + (targetProvince ? ` [PROVINCE:${targetProvince}]` : '') + (itemsTag ? ` ${itemsTag}` : '');
@@ -426,7 +446,7 @@ export const db = {
           const targetProvince = updates.province !== undefined ? updates.province : current.province;
           const targetItems = updates.items !== undefined ? updates.items : current.items;
           
-          let cleanRepairName = baseRepairName
+          let cleanRepairName = (baseRepairName || '')
             .replace(/\[VIN:[A-Z0-9]{17}\]/i, '')
             .replace(/\[ADVISOR:[^\]]+\]/i, '')
             .replace(/\[EMAIL:[^\]]+\]/i, '')
@@ -435,7 +455,7 @@ export const db = {
             .replace(/\[ITEMS:[A-Za-z0-9+/=]+\]/i, '')
             .trim();
 
-          const itemsJson = targetItems ? btoa(encodeURIComponent(JSON.stringify(targetItems))) : '';
+          const itemsJson = targetItems ? safeBtoa(encodeURIComponent(JSON.stringify(targetItems))) : '';
           const itemsTag = itemsJson ? `[ITEMS:${itemsJson}]` : '';
 
           const packedParts = [cleanRepairName];

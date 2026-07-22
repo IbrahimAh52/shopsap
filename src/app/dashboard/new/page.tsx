@@ -495,17 +495,6 @@ function NewInspectionForm() {
           text: smsText
         }));
 
-        await fetch('/api/inspections', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: inspectionId,
-            ...metadata,
-            status: 'SENT',
-            videoUrl,
-          }),
-        });
-
         // Format native SMS URI scheme (handles iOS Safari vs Android formatting differences)
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
                       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
