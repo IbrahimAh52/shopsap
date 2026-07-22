@@ -557,115 +557,99 @@ export default function MechanicDashboard() {
           </div>
         )}
 
-        {/* Dashboard Metrics */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[
-            { label: 'Pending Upload', value: offlineCount, valueColor: 'text-amber-500' },
-            { label: 'Awaiting Action', value: awaitingInspection.length + sentToCustomer.length, valueColor: isDark ? 'text-gray-300' : 'text-gray-700' },
-            { label: 'Approved Today', value: approvedReady.length, valueColor: 'text-emerald-550' },
-            { label: 'Total Value', value: formatCost(inspections.reduce((acc, curr) => acc + (curr.status === 'APPROVED' ? curr.estimatedCost : 0), 0)), valueColor: 'text-blue-500' }
-          ].map((card, idx) => (
-            <div key={idx} className={`border p-3 rounded-xl flex flex-col transition-colors duration-200 ${
-              isDark ? 'bg-[#0f172a] border-gray-805/80' : 'bg-white border-gray-200 shadow-2xs'
-            }`}>
-              <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                {card.label}
-              </span>
-              <span className={`text-2xl font-black mt-1 ${card.valueColor}`}>
-                {card.value}
-              </span>
-            </div>
-          ))}
-        </section>
+        {/* Search & Filter Bar */}
+        <div className={`flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center`}>
+          {/* Search Input */}
+          <div className="relative flex-1">
+            <input
+              type="text"
+              placeholder="Search VIN, vehicle, phone..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={`w-full h-11 pl-10 pr-9 text-sm rounded-xl border focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all ${
+                isDark 
+                  ? 'bg-gray-900/60 border-gray-800 text-white placeholder-gray-500' 
+                  : 'bg-white border-gray-200 text-gray-800 placeholder-gray-400 shadow-sm'
+              }`}
+            />
+            <span className={`absolute left-3.5 top-3.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </span>
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className={`absolute right-3 top-2.5 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                  isDark ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                &times;
+              </button>
+            )}
+          </div>
 
-        {/* Main Tab Navigation */}
-        <div className="flex border-b border-gray-200 dark:border-gray-800/80 mt-6 mb-4 select-none">
-          <button
-            onClick={() => setActiveTab('active')}
-            className={`pb-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-1.5 ${
-              activeTab === 'active'
-                ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-white'
+          {/* Advisor Filter */}
+          <select
+            value={advisorFilter}
+            onChange={(e) => setAdvisorFilter(e.target.value)}
+            className={`h-11 px-3 text-xs font-bold rounded-xl border focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all sm:w-44 ${
+              isDark 
+                ? 'bg-gray-900/60 border-gray-800 text-gray-200' 
+                : 'bg-white border-gray-200 text-gray-700 shadow-sm'
             }`}
           >
-            <span>Active Board</span>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+            <option value="all">All Advisors</option>
+            {availableAdvisors.map((adv) => (
+              <option key={adv} value={adv}>{adv}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className={`flex items-center gap-1 p-1 rounded-xl mt-4 mb-1 select-none ${
+          isDark ? 'bg-gray-900/40 border border-gray-800/80' : 'bg-gray-100 border border-gray-200/60'
+        }`}>
+          <button
+            onClick={() => setActiveTab('active')}
+            className={`flex-1 py-2.5 px-4 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
               activeTab === 'active'
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                : 'bg-gray-100 text-gray-600 dark:bg-gray-800/40 dark:text-gray-400'
+                ? isDark
+                  ? 'bg-gray-800 text-white shadow-md shadow-black/20 border border-gray-700/50'
+                  : 'bg-white text-gray-900 shadow-sm border border-gray-200/80'
+                : isDark
+                  ? 'text-gray-500 hover:text-gray-300'
+                  : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <span>Active</span>
+            <span className={`text-[10px] min-w-[20px] px-1.5 py-0.5 rounded-full font-bold leading-none ${
+              activeTab === 'active'
+                ? 'bg-blue-600 text-white'
+                : isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-200 text-gray-500'
             }`}>
               {awaitingInspection.length + sentToCustomer.length + approvedReady.length + declined.length}
             </span>
           </button>
           <button
             onClick={() => setActiveTab('archived')}
-            className={`pb-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-1.5 ${
+            className={`flex-1 py-2.5 px-4 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
               activeTab === 'archived'
-                ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-white'
+                ? isDark
+                  ? 'bg-gray-800 text-white shadow-md shadow-black/20 border border-gray-700/50'
+                  : 'bg-white text-gray-900 shadow-sm border border-gray-200/80'
+                : isDark
+                  ? 'text-gray-500 hover:text-gray-300'
+                  : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            <span>Archived History</span>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+            <span>Archived</span>
+            <span className={`text-[10px] min-w-[20px] px-1.5 py-0.5 rounded-full font-bold leading-none ${
               activeTab === 'archived'
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                : 'bg-gray-100 text-gray-600 dark:bg-gray-800/40 dark:text-gray-400'
+                ? 'bg-blue-600 text-white'
+                : isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-200 text-gray-500'
             }`}>
               {archived.length}
             </span>
           </button>
-        </div>
-
-        {/* Search & Filters Controls */}
-        <div className={`p-4 rounded-2xl border mb-6 flex flex-col md:flex-row gap-4 justify-between items-center transition-colors duration-200 ${
-          isDark ? 'bg-[#0f172a]/40 border-gray-805/85' : 'bg-white border-gray-200 shadow-2xs'
-        }`}>
-          {/* Advisor Filter Dropdown */}
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-550'}`}>
-              Advisor:
-            </span>
-            <select
-              value={advisorFilter}
-              onChange={(e) => setAdvisorFilter(e.target.value)}
-              className={`h-10 px-3 text-xs font-bold rounded-xl border focus:border-blue-500 focus:outline-none transition-colors w-full md:w-44 ${
-                isDark 
-                  ? 'bg-slate-900 border-gray-800 text-gray-200' 
-                  : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400 shadow-sm'
-              }`}
-            >
-              <option value="all">All Advisors</option>
-              {availableAdvisors.map((adv) => (
-                <option key={adv} value={adv}>{adv}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Search Input */}
-          <div className="relative w-full md:w-72">
-            <input
-              type="text"
-              placeholder="Search VIN, vehicle, phone..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full h-10 pl-9 pr-8 text-xs rounded-xl border focus:border-blue-500 focus:outline-none transition-colors ${
-                isDark 
-                  ? 'bg-gray-950 border-gray-855 text-white placeholder-gray-500 border-gray-850' 
-                  : 'bg-gray-50 border-gray-300 text-gray-850 placeholder-gray-400'
-              }`}
-            />
-            <span className="absolute left-3 top-3 text-gray-500">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-            </span>
-            {searchQuery && (
-              <button 
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3.5 top-2.5 text-lg font-bold text-gray-400 hover:text-gray-200"
-              >
-                &times;
-              </button>
-            )}
-          </div>
         </div>
 
         {activeTab === 'active' ? (
