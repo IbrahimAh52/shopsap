@@ -21,6 +21,7 @@ export interface Inspection {
   updatedAt: string;
   advisorName?: string;
   advisorEmail?: string;
+  shopName?: string;
 }
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -85,6 +86,7 @@ function decodeInspection(row: any): Inspection {
   let vin = row.vin;
   let advisorName = row.advisor_name !== undefined ? row.advisor_name : row.advisorName;
   let advisorEmail = row.advisor_email !== undefined ? row.advisor_email : row.advisorEmail;
+  let shopName = row.shop_name !== undefined ? row.shop_name : row.shopName;
 
   // Decouple packed VIN from repairName if present
   if (repairName && repairName.includes(' [VIN:')) {
@@ -113,6 +115,15 @@ function decodeInspection(row: any): Inspection {
     }
   }
 
+  // Decouple packed SHOP from repairName if present
+  if (repairName && repairName.includes(' [SHOP:')) {
+    const match = repairName.match(/\s\[SHOP:([^\]]+)\]/i);
+    if (match) {
+      shopName = match[1];
+      repairName = repairName.replace(/\s\[SHOP:[^\]]+\]/i, '');
+    }
+  }
+
   return {
     id: row.id,
     vehicleYear: row.vehicle_year !== undefined ? row.vehicle_year : row.vehicleYear,
@@ -131,6 +142,7 @@ function decodeInspection(row: any): Inspection {
     updatedAt: row.updated_at !== undefined ? row.updated_at : row.updatedAt,
     advisorName,
     advisorEmail,
+    shopName,
   };
 }
 
@@ -200,6 +212,7 @@ export const db = {
             approved_at: newRecord.approvedAt,
             advisor_name: newRecord.advisorName,
             advisor_email: newRecord.advisorEmail,
+            shop_name: newRecord.shopName,
           }])
           .select()
           .single();
@@ -214,6 +227,7 @@ export const db = {
           newRecord.vin ? `[VIN:${newRecord.vin}]` : '',
           newRecord.advisorName ? `[ADVISOR:${newRecord.advisorName}]` : '',
           newRecord.advisorEmail ? `[EMAIL:${newRecord.advisorEmail}]` : '',
+          newRecord.shopName ? `[SHOP:${newRecord.shopName}]` : '',
         ].filter(Boolean);
 
         const packedRepairName = packedParts.join(' ');
@@ -285,6 +299,7 @@ export const db = {
         if (updates.approvedAt !== undefined) dbUpdates.approved_at = updates.approvedAt;
         if (updates.advisorName !== undefined) dbUpdates.advisor_name = updates.advisorName;
         if (updates.advisorEmail !== undefined) dbUpdates.advisor_email = updates.advisorEmail;
+        if (updates.shopName !== undefined) dbUpdates.shop_name = updates.shopName;
         
         dbUpdates.status = targetStatus;
         dbUpdates.signature = targetSignature;
@@ -320,17 +335,20 @@ export const db = {
           const targetVin = updates.vin !== undefined ? updates.vin : current.vin;
           const targetAdvName = updates.advisorName !== undefined ? updates.advisorName : current.advisorName;
           const targetAdvEmail = updates.advisorEmail !== undefined ? updates.advisorEmail : current.advisorEmail;
+          const targetShopName = updates.shopName !== undefined ? updates.shopName : current.shopName;
           
           let cleanRepairName = baseRepairName
             .replace(/\s\[VIN:[A-Z0-9]{17}\]/i, '')
             .replace(/\s\[ADVISOR:[^\]]+\]/i, '')
             .replace(/\s\[EMAIL:[^\]]+\]/i, '')
+            .replace(/\s\[SHOP:[^\]]+\]/i, '')
             .trim();
 
           const packedParts = [cleanRepairName];
           if (targetVin) packedParts.push(`[VIN:${targetVin}]`);
           if (targetAdvName) packedParts.push(`[ADVISOR:${targetAdvName}]`);
           if (targetAdvEmail) packedParts.push(`[EMAIL:${targetAdvEmail}]`);
+          if (targetShopName) packedParts.push(`[SHOP:${targetShopName}]`);
 
           dbUpdates.repair_name = packedParts.filter(Boolean).join(' ');
 

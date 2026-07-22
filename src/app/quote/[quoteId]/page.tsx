@@ -151,6 +151,18 @@ export default function CustomerQuotePortal() {
         <Lock className="w-3 h-3 text-blue-400" /> SECURE VEHICLE TRANSACTION PORTAL
       </div>
 
+      {/* Brand Shop Header */}
+      <header className="px-4 py-3 bg-white border-b border-gray-200/80 flex items-center justify-between shadow-xs">
+        <div className="flex items-center gap-2">
+          <div className="relative w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-650 flex items-center justify-center text-white shadow-xs">
+            <Wrench className="w-4 h-4" />
+          </div>
+          <span className="text-base font-bold tracking-tight text-gray-900">
+            {inspection.shopName || 'ShopSnap'}
+          </span>
+        </div>
+      </header>
+
       <main className="flex-1 p-4 max-w-md mx-auto w-full space-y-5 py-6">
         
         {/* Verification Card */}

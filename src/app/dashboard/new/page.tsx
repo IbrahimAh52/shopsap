@@ -240,6 +240,8 @@ function NewInspectionForm() {
     const inspectionId = editId || generateUUID();
     const isEditing = !!editId;
 
+    const savedShopName = typeof window !== 'undefined' ? (localStorage.getItem('shopsnap_shop_name') || 'ShopSnap') : 'ShopSnap';
+
     const metadata = {
       vehicleYear: parseInt(vehicleYear) || new Date().getFullYear(),
       vehicleMake,
@@ -251,6 +253,7 @@ function NewInspectionForm() {
       urgency,
       advisorName: selectedAdvisor || currentUser?.name || 'Advisor',
       advisorEmail: currentUser?.email || '',
+      shopName: savedShopName,
     };
 
     try {
@@ -369,8 +372,8 @@ function NewInspectionForm() {
           });
         }
 
-        const quoteUrl = `${window.location.origin}/quote/${inspectionId}`;
-        const smsText = `ShopSnap: ${metadata.vehicleMake} ${metadata.vehicleModel} checkup. Required service: ${metadata.repairName}. Estimate: $${costNum.toFixed(2)}. Review details & approve here: ${quoteUrl}`;
+        const savedShopName = typeof window !== 'undefined' ? (localStorage.getItem('shopsnap_shop_name') || 'ShopSnap') : 'ShopSnap';
+        const smsText = `${savedShopName}: ${metadata.vehicleMake} ${metadata.vehicleModel} checkup. Required service: ${metadata.repairName}. Estimate: $${costNum.toFixed(2)}. Review details & approve here: ${quoteUrl}`;
         
         // Save locally for dashboard simulated toast overlay fallback
         localStorage.setItem('shopsnap_sms_log', JSON.stringify({

@@ -26,7 +26,8 @@ import {
   Camera,
   LogOut,
   Loader2,
-  Settings
+  Settings,
+  ChevronDown
 } from 'lucide-react';
 import { db, Inspection, isSupabaseConfigured } from '@/lib/db';
 import { offlineQueue } from '@/lib/offline-queue';
@@ -52,6 +53,11 @@ export default function MechanicDashboard() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
   const [advisorFilter, setAdvisorFilter] = useState<string>('all');
+  const [activeMobileLane, setActiveMobileLane] = useState<'awaiting' | 'sent' | 'approved' | 'declined'>('awaiting');
+
+  // Settings states
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [shopNameSetting, setShopNameSetting] = useState<string>('ShopSnap');
 
   // Copy state tracker
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -103,6 +109,12 @@ export default function MechanicDashboard() {
       const savedTheme = localStorage.getItem('shopsnap_mechanic_theme');
       if (savedTheme === 'light') {
         setIsDark(false);
+      }
+
+      // Load saved shop name
+      const savedShop = localStorage.getItem('shopsnap_shop_name');
+      if (savedShop) {
+        setShopNameSetting(savedShop);
       }
 
       const handleOnline = () => {
@@ -360,6 +372,20 @@ export default function MechanicDashboard() {
             {isDark ? <Sun className="w-4 h-4 text-yellow-450" /> : <Moon className="w-4 h-4" />}
           </button>
 
+          {/* Settings Button */}
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className={`p-2 rounded-xl border transition-colors ${
+              isDark 
+                ? 'bg-gray-800/40 border-gray-700 text-gray-305 hover:text-white' 
+                : 'bg-gray-100 border-gray-305 text-gray-605 hover:text-gray-900 hover:bg-gray-250'
+            }`}
+            title="Shop Settings"
+            aria-label="Shop Settings"
+          >
+            <Settings className="w-4 h-4 animate-[spin_30s_linear_infinite]" />
+          </button>
+
           {/* Logout Button */}
           <button
             onClick={async () => {
@@ -547,8 +573,32 @@ export default function MechanicDashboard() {
           /* Vehicle Status Sections */
           <section className="space-y-6">
             
+            {/* Mobile Lane Sub-Tabs Selector */}
+            <div className="flex md:hidden items-center gap-1.5 p-1 bg-gray-50/5 dark:bg-gray-950/20 rounded-xl border border-gray-200/50 dark:border-gray-800/80 mb-4 overflow-x-auto select-none no-scrollbar">
+              {[
+                { id: 'awaiting', label: 'Awaiting', count: awaitingInspection.length, dotColor: 'bg-amber-500' },
+                { id: 'sent', label: 'Sent', count: sentToCustomer.length, dotColor: 'bg-blue-500' },
+                { id: 'approved', label: 'Approved', count: approvedReady.length, dotColor: 'bg-emerald-500' },
+                { id: 'declined', label: 'Declined', count: declined.length, dotColor: 'bg-red-500' }
+              ].map((lane) => (
+                <button
+                  key={lane.id}
+                  type="button"
+                  onClick={() => setActiveMobileLane(lane.id as any)}
+                  className={`flex-1 min-w-[80px] py-2 px-2.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 border ${
+                    activeMobileLane === lane.id
+                      ? 'bg-blue-600/10 text-blue-500 border-blue-500/20 shadow-xs'
+                      : 'text-gray-500 hover:text-gray-850 dark:text-gray-400 dark:hover:text-white border-transparent'
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${lane.dotColor}`} />
+                  <span>{lane.label} ({lane.count})</span>
+                </button>
+              ))}
+            </div>
+
             {/* Awaiting Inspection */}
-            <div className="space-y-3">
+            <div className={`space-y-3 ${activeMobileLane === 'awaiting' ? 'block' : 'hidden md:block'}`}>
               <div className={`flex items-center gap-2 border-b pb-1.5 ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
                 <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
                 <h2 className={`font-bold text-xs uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -575,7 +625,7 @@ export default function MechanicDashboard() {
             </div>
 
             {/* Sent to Customer */}
-            <div className="space-y-3">
+            <div className={`space-y-3 ${activeMobileLane === 'sent' ? 'block' : 'hidden md:block'}`}>
               <div className={`flex items-center gap-2 border-b pb-1.5 ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
                 <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
                 <h2 className={`font-bold text-xs uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -602,7 +652,7 @@ export default function MechanicDashboard() {
             </div>
 
             {/* Approved */}
-            <div className="space-y-3">
+            <div className={`space-y-3 ${activeMobileLane === 'approved' ? 'block' : 'hidden md:block'}`}>
               <div className={`flex items-center gap-2 border-b pb-1.5 ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
                 <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                 <h2 className={`font-bold text-xs uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -629,7 +679,7 @@ export default function MechanicDashboard() {
             </div>
 
             {/* Declined */}
-            <div className="space-y-3">
+            <div className={`space-y-3 ${activeMobileLane === 'declined' ? 'block' : 'hidden md:block'}`}>
               <div className={`flex items-center gap-2 border-b pb-1.5 ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
                 <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
                 <h2 className={`font-bold text-xs uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -764,6 +814,71 @@ export default function MechanicDashboard() {
           </form>
         </div>
       )}
+
+      {/* Settings Modal Dialog */}
+      {isSettingsOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className={`w-full max-w-sm rounded-2xl border p-5 shadow-2xl transition-colors duration-200 ${
+            isDark ? 'bg-[#0f172a] border-gray-800 text-white' : 'bg-white border-gray-250 text-gray-900'
+          }`}>
+            <h3 className="text-base font-bold mb-4 flex items-center gap-2">
+              <Settings className="w-5 h-5 text-blue-500 animate-[spin_8s_linear_infinite]" />
+              <span>Shop Settings</span>
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className={`block text-[10px] font-bold uppercase tracking-wider mb-1.5 ${
+                  isDark ? 'text-gray-400' : 'text-gray-500'
+                }`}>
+                  Shop Display Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Apex Auto Body"
+                  value={shopNameSetting}
+                  onChange={(e) => setShopNameSetting(e.target.value)}
+                  className={`w-full h-11 px-3 rounded-xl border focus:border-blue-500 focus:outline-none text-sm font-semibold ${
+                    isDark 
+                      ? 'bg-gray-955 border-gray-800 text-white placeholder-gray-600' 
+                      : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400'
+                  }`}
+                />
+                <p className="text-[10px] text-gray-500 mt-1">
+                  This name will display in SMS text dispatches and on the customer quote approval page.
+                </p>
+              </div>
+
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsSettingsOpen(false)}
+                  className={`flex-1 h-11 rounded-xl text-xs font-bold border transition-colors ${
+                    isDark 
+                      ? 'bg-gray-800/40 border-gray-700 text-gray-300 hover:text-white' 
+                      : 'bg-gray-100 border-gray-300 text-gray-600 hover:text-gray-950 hover:bg-gray-200'
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const cleanName = shopNameSetting.trim();
+                    localStorage.setItem('shopsnap_shop_name', cleanName || 'ShopSnap');
+                    setIsSettingsOpen(false);
+                    // Emit storage update event to alert any listening pages
+                    window.dispatchEvent(new Event('storage_updated'));
+                  }}
+                  className="flex-1 h-11 rounded-xl bg-blue-600 hover:bg-blue-750 text-white font-bold text-xs shadow-md transition-colors"
+                >
+                  Save Settings
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -804,6 +919,8 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
     }
   };
 
+  const [isExpanded, setIsExpanded] = useState<boolean>(false);
+
   return (
     <div className={`relative rounded-xl border p-4 transition-all overflow-hidden flex flex-col justify-between transition-colors duration-200 ${
       isDark ? 'bg-[#0f172a] border-gray-850 hover:border-gray-700' : 'bg-white border-gray-250/80 shadow-xs hover:border-gray-350'
@@ -814,37 +931,51 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
       }`} />
 
       <div className="pl-1">
-        <div className="flex items-start justify-between">
+        {/* Clickable Header area on mobile */}
+        <div 
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-start justify-between cursor-pointer md:cursor-default"
+        >
           <div>
-            <h3 className={`font-bold text-base ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+            <h3 className={`font-bold text-base ${isDark ? 'text-gray-200' : 'text-gray-850'}`}>
               {item.vehicleYear} {item.vehicleMake} {item.vehicleModel}
             </h3>
-            <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-450">
-              <Phone className="w-3 h-3 text-gray-455 shrink-0" />
-              <span>{item.customerPhone}</span>
+            
+            {/* Phone, VIN, Advisor: hidden on mobile unless expanded */}
+            <div className={`md:block ${isExpanded ? 'block' : 'hidden'}`}>
+              <div className="flex items-center gap-1.5 mt-1.5 text-xs text-gray-450">
+                <Phone className="w-3 h-3 text-gray-455 shrink-0" />
+                <span>{item.customerPhone}</span>
+              </div>
+              {item.vin && (
+                <div className="flex items-center gap-1.5 mt-1.5 text-[10px] font-mono uppercase tracking-wider text-blue-500 font-semibold">
+                  <span className="text-[9px] font-bold bg-blue-500/10 px-1 py-0.5 rounded border border-blue-500/20">VIN</span>
+                  <span>{item.vin}</span>
+                </div>
+              )}
+              {item.advisorName && (
+                <div className={`flex items-center gap-1 mt-1.5 text-[10px] font-semibold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                    isDark ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-700'
+                  }`}>
+                    Advisor: {item.advisorName}
+                  </span>
+                </div>
+              )}
             </div>
-            {item.vin && (
-              <div className="flex items-center gap-1.5 mt-1.5 text-[10px] font-mono uppercase tracking-wider text-blue-500 font-semibold">
-                <span className="text-[9px] font-bold bg-blue-500/10 px-1 py-0.5 rounded border border-blue-500/20">VIN</span>
-                <span>{item.vin}</span>
-              </div>
-            )}
-            {item.advisorName && (
-              <div className={`flex items-center gap-1 mt-1.5 text-[10px] font-semibold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                  isDark ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-700'
-                }`}>
-                  Advisor: {item.advisorName}
-                </span>
-              </div>
-            )}
           </div>
-          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider ${urgencyColor}`}>
-            {item.urgency}
-          </span>
+          
+          <div className="flex items-center gap-2.5">
+            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider ${urgencyColor}`}>
+              {item.urgency}
+            </span>
+            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 md:hidden ${
+              isExpanded ? 'rotate-180' : 'rotate-0'
+            }`} />
+          </div>
         </div>
 
-        {/* Details */}
+        {/* Details - Always visible */}
         <div className="mt-3.5 space-y-1">
           <p className={`text-sm font-bold line-clamp-1 ${isDark ? 'text-gray-300' : 'text-gray-750'}`}>{item.repairName}</p>
           <div className="flex items-center justify-between text-xs pt-1.5">
@@ -854,8 +985,10 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
         </div>
       </div>
 
-      {/* Action Footer Button Group */}
-      <div className={`border-t mt-4 pt-3 flex flex-col gap-2 pl-1 ${
+      {/* Action Footer Button Group - hidden on mobile unless expanded */}
+      <div className={`border-t mt-4 pt-3 flex flex-col gap-2 pl-1 md:flex ${
+        isExpanded ? 'flex' : 'hidden'
+      } ${
         isDark ? 'border-gray-800/80' : 'border-gray-150'
       }`}>
         <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-gray-500">
