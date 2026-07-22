@@ -75,7 +75,8 @@ export default function MechanicDashboard() {
   // Settings states
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [shopNameSetting, setShopNameSetting] = useState<string>('ShopSnap');
-  const [shopProvinceSetting, setShopProvinceSetting] = useState<string>('ON');
+  const [shopProvinceSetting, setShopProvinceSetting] = useState<string>('AB');
+  const [showTaxWarning, setShowTaxWarning] = useState<boolean>(false);
 
   // Copy state tracker
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -137,7 +138,13 @@ export default function MechanicDashboard() {
         setShopNameSetting(savedShop);
       }
 
-      setShopProvinceSetting(localStorage.getItem('shopsnap_shop_province') || 'ON');
+      const savedProvince = localStorage.getItem('shopsnap_shop_province');
+      if (savedProvince) {
+        setShopProvinceSetting(savedProvince);
+      } else {
+        setShopProvinceSetting('AB');
+        setShowTaxWarning(true);
+      }
 
       const handleOnline = () => {
         setIsOnline(true);
@@ -461,6 +468,38 @@ export default function MechanicDashboard() {
             >
               Open Customer View <ExternalLink className="w-3 h-3" />
             </Link>
+          </div>
+        )}
+
+        {/* Tax Warning Banner */}
+        {showTaxWarning && (
+          <div className="p-4 rounded-xl border bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs transition-all duration-200">
+            <div className="flex items-center gap-2.5 text-xs font-bold leading-normal text-center sm:text-left">
+              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 animate-[bounce_2s_infinite]" />
+              <span>
+                Tax location is not configured yet. Quotes currently default to **Alberta (5% GST)**. Please select your province in Settings.
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => {
+                  setIsSettingsOpen(true);
+                }}
+                className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-750 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs"
+              >
+                Configure
+              </button>
+              <button
+                onClick={() => {
+                  localStorage.setItem('shopsnap_shop_province', 'AB');
+                  setShopProvinceSetting('AB');
+                  setShowTaxWarning(false);
+                }}
+                className="px-2.5 py-1.5 border border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 rounded-lg text-[10px] font-bold transition-all"
+              >
+                Dismiss
+              </button>
+            </div>
           </div>
         )}
 

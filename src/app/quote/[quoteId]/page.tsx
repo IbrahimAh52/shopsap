@@ -160,9 +160,9 @@ export default function CustomerQuotePortal() {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
   };
 
-  const defaultProv = typeof window !== 'undefined' ? (localStorage.getItem('shopsnap_shop_province') || 'ON') : 'ON';
+  const defaultProv = typeof window !== 'undefined' ? (localStorage.getItem('shopsnap_shop_province') || 'AB') : 'AB';
   const provCode = (inspection.province || defaultProv).toUpperCase();
-  const taxInfo = PROVINCE_TAXES[provCode] || PROVINCE_TAXES['ON'];
+  const taxInfo = PROVINCE_TAXES[provCode] || PROVINCE_TAXES['AB'];
   
   const subtotal = inspection.estimatedCost || 0;
   const taxAmount = subtotal * taxInfo.rate;

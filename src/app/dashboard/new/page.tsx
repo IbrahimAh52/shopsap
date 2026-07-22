@@ -158,7 +158,7 @@ function NewInspectionForm() {
 
     if (!editId && typeof window !== 'undefined') {
       setShopName(localStorage.getItem('shopsnap_shop_name') || 'ShopSnap');
-      setProvince(localStorage.getItem('shopsnap_shop_province') || 'ON');
+      setProvince(localStorage.getItem('shopsnap_shop_province') || 'AB');
     }
   }, [currentUser, editId]);
 
@@ -190,7 +190,7 @@ function NewInspectionForm() {
           if (data.province) {
             setProvince(data.province);
           } else if (typeof window !== 'undefined') {
-            setProvince(localStorage.getItem('shopsnap_shop_province') || 'ON');
+            setProvince(localStorage.getItem('shopsnap_shop_province') || 'AB');
           }
           
           if (CAR_MAKES_AND_MODELS[data.vehicleMake]) {
@@ -309,7 +309,7 @@ function NewInspectionForm() {
       advisorName: selectedAdvisor || currentUser?.name || 'Advisor',
       advisorEmail: currentUser?.email || '',
       shopName: finalShopName,
-      province: province || 'ON',
+      province: province || 'AB',
       items: lineItems,
     };
 
