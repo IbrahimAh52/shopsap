@@ -240,32 +240,54 @@ export default function CustomerQuotePortal() {
             {/* Section: Repair Itemized */}
             <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 pb-3 border-b border-gray-100 uppercase tracking-wider pt-2">
               <Wrench className="w-4 h-4 text-gray-400" />
-              <span>Required Service</span>
+              <span>Required Services</span>
             </div>
             
-            <div className="space-y-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h4 className="text-sm font-bold text-gray-805">{inspection.repairName}</h4>
-                  <div className="flex items-center gap-1.5 mt-2">
-                    <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 border rounded-full ${
+            <div className="space-y-0">
+              {inspection.items && inspection.items.length > 0 ? (
+                <>
+                  {inspection.items.map((item, idx) => (
+                    <div key={idx} className={`flex items-start justify-between gap-3 py-3 ${
+                      idx < inspection.items!.length - 1 ? 'border-b border-dashed border-gray-100' : ''
+                    }`}>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-bold text-gray-800 leading-snug">{item.name}</h4>
+                        <span className={`inline-block mt-1.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 border rounded-full ${
+                          item.urgency === 'URGENT' 
+                            ? 'bg-red-50 text-red-600 border-red-100' 
+                            : item.urgency === 'RECOMMENDED'
+                              ? 'bg-amber-50 text-amber-600 border-amber-100'
+                              : 'bg-gray-50 text-gray-500 border-gray-100'
+                        }`}>
+                          {item.urgency}
+                        </span>
+                      </div>
+                      <span className="text-sm font-extrabold text-gray-900 whitespace-nowrap pt-0.5">
+                        {formatCost(item.cost)}
+                      </span>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                /* Fallback: single repair (legacy records without items array) */
+                <div className="flex items-start justify-between gap-4 py-3">
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-800">{inspection.repairName}</h4>
+                    <span className={`inline-block mt-1.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 border rounded-full ${
                       inspection.urgency === 'URGENT' 
                         ? 'bg-red-50 text-red-600 border-red-100' 
                         : inspection.urgency === 'RECOMMENDED'
                           ? 'bg-amber-50 text-amber-600 border-amber-100'
-                          : 'bg-gray-50 text-gray-600 border-gray-100'
+                          : 'bg-gray-50 text-gray-500 border-gray-100'
                     }`}>
-                      {inspection.urgency} Urgency
+                      {inspection.urgency}
                     </span>
                   </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-base font-extrabold text-gray-900">
+                  <span className="text-sm font-extrabold text-gray-900">
                     {formatCost(inspection.estimatedCost)}
                   </span>
-                  <span className="text-[10px] text-gray-400 block mt-0.5 font-medium">Est. Total</span>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Transaction Total Summary */}
