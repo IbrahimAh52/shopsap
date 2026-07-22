@@ -15,6 +15,8 @@ export interface QueuedUpload {
     repairName: string;
     estimatedCost: number;
     urgency: 'URGENT' | 'RECOMMENDED' | 'MONITOR';
+    province?: string;
+    items?: any[];
   };
   queuedAt: string;
 }

@@ -142,6 +142,27 @@ function decodeInspection(row: any): Inspection {
     }
   }
 
+  let items: LineItem[] = [];
+  if (repairName && /\[ITEMS:([A-Za-z0-9+/=]+)\]/i.test(repairName)) {
+    const match = repairName.match(/\[ITEMS:([A-Za-z0-9+/=]+)\]/i);
+    if (match) {
+      try {
+        const decodedJson = decodeURIComponent(atob(match[1]));
+        items = JSON.parse(decodedJson);
+        repairName = repairName.replace(/\[ITEMS:[A-Za-z0-9+/=]+\]/i, '').trim();
+      } catch (err) {
+        console.warn('Failed to parse items tag base64:', err);
+      }
+    }
+  }
+
+  // Fallback for legacy rows
+  if (!items || items.length === 0) {
+    items = [
+      { name: repairName || 'General Repair', cost: Number(row.estimated_cost !== undefined ? row.estimated_cost : (row.estimatedCost || 0)), urgency: row.urgency || 'RECOMMENDED' }
+    ];
+  }
+
   return {
     id: row.id,
     vehicleYear: row.vehicle_year !== undefined ? row.vehicle_year : row.vehicleYear,
@@ -162,6 +183,7 @@ function decodeInspection(row: any): Inspection {
     advisorEmail,
     shopName,
     province,
+    items,
   };
 }
 
@@ -237,6 +259,9 @@ export const db = {
       updatedAt: now,
     };
 
+    const itemsJson = newRecord.items ? btoa(encodeURIComponent(JSON.stringify(newRecord.items))) : '';
+    const itemsTag = itemsJson ? `[ITEMS:${itemsJson}]` : '';
+
     if (isSupabaseConfigured && supabase) {
       try {
         // 1. Try clean insert with custom columns assuming they exist
@@ -249,7 +274,7 @@ export const db = {
             vehicle_model: newRecord.vehicleModel,
             vin: newRecord.vin,
             customer_phone: newRecord.customerPhone,
-            repair_name: newRecord.repairName + (newRecord.province ? ` [PROVINCE:${newRecord.province}]` : ''),
+            repair_name: newRecord.repairName + (newRecord.province ? ` [PROVINCE:${newRecord.province}]` : '') + (itemsTag ? ` ${itemsTag}` : ''),
             estimated_cost: newRecord.estimatedCost,
             urgency: newRecord.urgency,
             status: newRecord.status === 'ARCHIVED' ? 'APPROVED' : newRecord.status,
@@ -275,6 +300,7 @@ export const db = {
           newRecord.advisorEmail ? `[EMAIL:${newRecord.advisorEmail}]` : '',
           newRecord.shopName ? `[SHOP:${newRecord.shopName}]` : '',
           newRecord.province ? `[PROVINCE:${newRecord.province}]` : '',
+          itemsTag,
         ].filter(Boolean);
 
         const packedRepairName = packedParts.join(' ');
@@ -342,10 +368,17 @@ export const db = {
         
         const targetRepairName = updates.repairName !== undefined ? updates.repairName : current.repairName;
         const targetProvince = updates.province !== undefined ? updates.province : current.province;
+        const targetItems = updates.items !== undefined ? updates.items : current.items;
+        
         let cleanRepairName = targetRepairName
           .replace(/\[PROVINCE:[A-Z]{2,4}\]/i, '')
+          .replace(/\[ITEMS:[A-Za-z0-9+/=]+\]/i, '')
           .trim();
-        dbUpdates.repair_name = targetProvince ? `${cleanRepairName} [PROVINCE:${targetProvince}]` : cleanRepairName;
+          
+        const itemsJson = targetItems ? btoa(encodeURIComponent(JSON.stringify(targetItems))) : '';
+        const itemsTag = itemsJson ? `[ITEMS:${itemsJson}]` : '';
+        
+        dbUpdates.repair_name = cleanRepairName + (targetProvince ? ` [PROVINCE:${targetProvince}]` : '') + (itemsTag ? ` ${itemsTag}` : '');
 
         if (updates.estimatedCost !== undefined) dbUpdates.estimated_cost = updates.estimatedCost;
         if (updates.urgency !== undefined) dbUpdates.urgency = updates.urgency;
@@ -391,6 +424,7 @@ export const db = {
           const targetAdvEmail = updates.advisorEmail !== undefined ? updates.advisorEmail : current.advisorEmail;
           const targetShopName = updates.shopName !== undefined ? updates.shopName : current.shopName;
           const targetProvince = updates.province !== undefined ? updates.province : current.province;
+          const targetItems = updates.items !== undefined ? updates.items : current.items;
           
           let cleanRepairName = baseRepairName
             .replace(/\[VIN:[A-Z0-9]{17}\]/i, '')
@@ -398,7 +432,11 @@ export const db = {
             .replace(/\[EMAIL:[^\]]+\]/i, '')
             .replace(/\[SHOP:[^\]]+\]/i, '')
             .replace(/\[PROVINCE:[A-Z]{2,4}\]/i, '')
+            .replace(/\[ITEMS:[A-Za-z0-9+/=]+\]/i, '')
             .trim();
+
+          const itemsJson = targetItems ? btoa(encodeURIComponent(JSON.stringify(targetItems))) : '';
+          const itemsTag = itemsJson ? `[ITEMS:${itemsJson}]` : '';
 
           const packedParts = [cleanRepairName];
           if (targetVin) packedParts.push(`[VIN:${targetVin}]`);
@@ -406,6 +444,7 @@ export const db = {
           if (targetAdvEmail) packedParts.push(`[EMAIL:${targetAdvEmail}]`);
           if (targetShopName) packedParts.push(`[SHOP:${targetShopName}]`);
           if (targetProvince) packedParts.push(`[PROVINCE:${targetProvince}]`);
+          if (itemsTag) packedParts.push(itemsTag);
 
           dbUpdates.repair_name = packedParts.filter(Boolean).join(' ');
 
