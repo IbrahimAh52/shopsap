@@ -148,6 +148,27 @@ function decodeInspection(row: any): Inspection {
 
 export const db = {
   async list(): Promise<Inspection[]> {
+    let userEmail: string | undefined;
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        userEmail = user?.email;
+      } catch (err) {
+        console.warn('Could not retrieve Supabase user session in list:', err);
+      }
+    }
+
+    // Client-side local session fallback
+    if (!userEmail && typeof window !== 'undefined') {
+      const active = localStorage.getItem('shopsnap_active_user');
+      if (active) {
+        try {
+          userEmail = JSON.parse(active).email;
+        } catch {}
+      }
+    }
+
     if (isSupabaseConfigured && supabase) {
       const { data, error } = await supabase
         .from('inspections')
@@ -155,12 +176,18 @@ export const db = {
         .order('created_at', { ascending: false });
       if (error) throw error;
       
-      return (data || []).map(row => decodeInspection(row));
+      let list = (data || []).map(row => decodeInspection(row));
+      if (userEmail) {
+        list = list.filter(row => row.advisorEmail?.toLowerCase() === userEmail.toLowerCase());
+      }
+      return list;
     }
     
-    return getMockData()
-      .map(row => decodeInspection(row))
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    let list = getMockData().map(row => decodeInspection(row));
+    if (userEmail) {
+      list = list.filter(row => row.advisorEmail?.toLowerCase() === userEmail.toLowerCase());
+    }
+    return list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   },
 
   async get(id: string): Promise<Inspection | null> {
