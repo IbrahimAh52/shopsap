@@ -64,14 +64,7 @@ export default function MechanicDashboard() {
   // Auth States
   const [currentUser, setCurrentUser] = useState<UserSession | null>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
-
-  // Theme state: reads saved preference immediately
-  const [isDark, setIsDark] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('shopsnap_mechanic_theme') === 'dark';
-    }
-    return false;
-  });
+  const isDark = false;
 
   // Search & Tab States
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -146,10 +139,6 @@ export default function MechanicDashboard() {
     if (typeof window !== 'undefined') {
       setIsOnline(navigator.onLine);
       
-      // Load saved mechanic theme
-      const savedTheme = localStorage.getItem('shopsnap_mechanic_theme');
-      setIsDark(savedTheme === 'dark');
-
       // Sync settings from localStorage (in case they were set by another tab)
       const savedShop = localStorage.getItem('shopsnap_shop_name');
       if (savedShop) setShopNameSetting(savedShop);
@@ -235,11 +224,7 @@ export default function MechanicDashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  const toggleTheme = () => {
-    const nextTheme = !isDark;
-    setIsDark(nextTheme);
-    localStorage.setItem('shopsnap_mechanic_theme', nextTheme ? 'dark' : 'light');
-  };
+
 
   const toggleNetwork = () => {
     const nextState = !isOnline;
@@ -459,13 +444,9 @@ export default function MechanicDashboard() {
   }
 
   return (
-    <div className={`flex flex-col flex-1 min-h-screen pb-24 transition-colors duration-200 ${
-      isDark ? 'bg-[#070b13] text-gray-100' : 'bg-gray-50 text-gray-900'
-    }`}>
+    <div className="flex flex-col flex-1 min-h-screen pb-24 bg-gray-50 text-gray-900 font-sans antialiased">
       {/* Top Header */}
-      <header className={`sticky top-0 z-40 px-4 pb-3 pt-safe flex items-center justify-between border-b transition-colors duration-200 ${
-        isDark ? 'bg-[#0e1726]/90 border-gray-855/80 backdrop-blur' : 'bg-white border-gray-250/80 shadow-xs'
-      }`}>
+      <header className="sticky top-0 z-40 px-4 pb-3 pt-safe flex items-center justify-between bg-white border-b border-gray-200/80 shadow-xs">
         <div className="flex items-center gap-2">
           <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-650 flex items-center justify-center text-white shadow-md shadow-blue-500/10">
             <Settings className="w-5 h-5 animate-[spin_10s_linear_infinite]" />
@@ -474,15 +455,11 @@ export default function MechanicDashboard() {
             </div>
           </div>
           <div className="flex flex-col">
-            <h1 className={`text-xl font-extrabold tracking-tight leading-none ${
-              isDark ? 'text-white' : 'text-slate-900'
-            }`}>
+            <h1 className="text-xl font-extrabold tracking-tight leading-none text-slate-900">
               ShopSnap
             </h1>
-            <p className={`text-[9px] font-bold uppercase tracking-widest mt-0.5 ${
-              isDark ? 'text-gray-455 font-medium' : 'text-gray-500'
-            }`}>
-              Advisor: <span className={isDark ? 'text-blue-400 font-bold' : 'text-blue-600 font-extrabold'}>{currentUser?.name}</span>
+            <p className="text-[9px] font-bold uppercase tracking-widest mt-0.5 text-gray-500">
+              Advisor: <span className="text-blue-600 font-extrabold">{currentUser?.name}</span>
             </p>
           </div>
         </div>
@@ -492,11 +469,7 @@ export default function MechanicDashboard() {
           {/* Settings Button */}
           <button
             onClick={() => setIsSettingsOpen(true)}
-            className={`px-3 py-2 rounded-xl border transition-colors flex items-center gap-1.5 text-xs font-bold ${
-              isDark 
-                ? 'bg-gray-800/40 border-gray-700 text-gray-305 hover:text-white' 
-                : 'bg-gray-100 border-gray-305 text-gray-605 hover:text-gray-900 hover:bg-gray-200'
-            }`}
+            className="px-3 py-2 rounded-xl border border-gray-300 text-gray-700 bg-gray-100 hover:text-gray-900 hover:bg-gray-200 transition-colors flex items-center gap-1.5 text-xs font-bold"
             title="Shop Settings"
             aria-label="Shop Settings"
           >
@@ -510,11 +483,7 @@ export default function MechanicDashboard() {
               await auth.logout();
               router.push('/login');
             }}
-            className={`px-3 py-2 rounded-xl border transition-colors flex items-center gap-1.5 text-xs font-bold ${
-              isDark 
-                ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:text-red-300 hover:bg-red-500/20' 
-                : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
-            }`}
+            className="px-3 py-2 rounded-xl border border-red-200 text-red-600 bg-red-50 hover:bg-red-100 transition-colors flex items-center gap-1.5 text-xs font-bold"
             title="Log Out"
             aria-label="Log Out"
           >
@@ -548,19 +517,15 @@ export default function MechanicDashboard() {
         
         {/* SMS Notification Banner */}
         {lastSmsMessage && (
-          <div className={`border-l-4 border-blue-500 p-4 rounded-xl shadow-xl animate-bounce flex flex-col gap-1.5 ${
-            isDark ? 'bg-gray-900 text-gray-200' : 'bg-white text-gray-800 border border-gray-200'
-          }`}>
+          <div className="border-l-4 border-blue-500 p-4 rounded-xl shadow-xl animate-bounce flex flex-col gap-1.5 bg-white text-gray-800 border border-gray-200">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-blue-550 flex items-center gap-1">
+              <span className="text-xs font-bold text-blue-600 flex items-center gap-1">
                 <Send className="w-3 h-3" /> SMS DISPATCH MOCK
               </span>
               <button onClick={() => setLastSmsMessage(null)} className="text-gray-400 hover:text-gray-600 text-xs font-bold px-1.5">✕</button>
             </div>
             <p className="text-xs font-bold">To: {lastSmsMessage.phone}</p>
-            <p className={`text-sm italic p-2.5 rounded font-mono border break-all ${
-              isDark ? 'bg-gray-955/60 border-gray-800 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-600'
-            }`}>
+            <p className="text-sm italic p-2.5 rounded font-mono border break-all bg-gray-50 border-gray-200 text-gray-600">
               {lastSmsMessage.text}
             </p>
             <Link 
@@ -574,7 +539,7 @@ export default function MechanicDashboard() {
 
         {/* Tax Warning Banner */}
         {showTaxWarning && (
-          <div className="p-4 rounded-xl border bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs transition-all duration-200">
+          <div className="p-4 rounded-xl border bg-amber-50 border-amber-200 text-amber-800 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs transition-all duration-200">
             <div className="flex items-center gap-2.5 text-xs font-bold leading-normal text-center sm:text-left">
               <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 animate-[bounce_2s_infinite]" />
               <span>
@@ -586,7 +551,7 @@ export default function MechanicDashboard() {
                 onClick={() => {
                   setIsSettingsOpen(true);
                 }}
-                className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-750 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs"
+                className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shadow-xs"
               >
                 Configure
               </button>
@@ -596,7 +561,7 @@ export default function MechanicDashboard() {
                   setShopProvinceSetting('AB');
                   setShowTaxWarning(false);
                 }}
-                className="px-2.5 py-1.5 border border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 rounded-lg text-[10px] font-bold transition-all"
+                className="px-2.5 py-1.5 border border-amber-300 text-amber-700 hover:bg-amber-100 rounded-lg text-[10px] font-bold transition-all"
               >
                 Dismiss
               </button>
@@ -605,7 +570,7 @@ export default function MechanicDashboard() {
         )}
 
         {/* Search & Filter Bar */}
-        <div className={`flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center`}>
+        <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
           {/* Search Input */}
           <div className="relative flex-1">
             <input
@@ -613,21 +578,15 @@ export default function MechanicDashboard() {
               placeholder="Search VIN, vehicle, phone..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full h-11 pl-10 pr-9 text-sm rounded-xl border focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all ${
-                isDark 
-                  ? 'bg-gray-900/60 border-gray-800 text-white placeholder-gray-500' 
-                  : 'bg-white border-gray-200 text-gray-800 placeholder-gray-400 shadow-sm'
-              }`}
+              className="w-full h-11 pl-10 pr-9 text-sm rounded-xl border border-gray-200 text-gray-800 bg-white placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all shadow-sm"
             />
-            <span className={`absolute left-3.5 top-3.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+            <span className="absolute left-3.5 top-3.5 text-gray-400">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </span>
             {searchQuery && (
               <button 
                 onClick={() => setSearchQuery('')}
-                className={`absolute right-3 top-2.5 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                  isDark ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
-                }`}
+                className="absolute right-3 top-2.5 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
               >
                 &times;
               </button>
@@ -638,11 +597,7 @@ export default function MechanicDashboard() {
           <select
             value={advisorFilter}
             onChange={(e) => setAdvisorFilter(e.target.value)}
-            className={`h-11 px-3 text-xs font-bold rounded-xl border focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all sm:w-44 ${
-              isDark 
-                ? 'bg-gray-900/60 border-gray-800 text-gray-200' 
-                : 'bg-white border-gray-200 text-gray-700 shadow-sm'
-            }`}
+            className="h-11 px-3 text-xs font-bold rounded-xl border border-gray-200 bg-white text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all sm:w-44 shadow-sm"
           >
             <option value="all">All Advisors</option>
             {availableAdvisors.map((adv) => (
@@ -652,26 +607,20 @@ export default function MechanicDashboard() {
         </div>
 
         {/* Tab Navigation */}
-        <div className={`flex items-center gap-1 p-1 rounded-xl mt-4 mb-1 select-none ${
-          isDark ? 'bg-gray-900/40 border border-gray-800/80' : 'bg-gray-100 border border-gray-200/60'
-        }`}>
+        <div className="flex items-center gap-1 p-1 rounded-xl mt-4 mb-1 select-none bg-gray-100 border border-gray-200/60">
           <button
             onClick={() => setActiveTab('active')}
             className={`flex-1 py-2.5 px-4 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
               activeTab === 'active'
-                ? isDark
-                  ? 'bg-gray-800 text-white shadow-md shadow-black/20 border border-gray-700/50'
-                  : 'bg-white text-gray-900 shadow-sm border border-gray-200/80'
-                : isDark
-                  ? 'text-gray-500 hover:text-gray-300'
-                  : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-white text-gray-900 shadow-sm border border-gray-200/80'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             <span>Active</span>
             <span className={`text-[10px] min-w-[20px] px-1.5 py-0.5 rounded-full font-bold leading-none ${
               activeTab === 'active'
                 ? 'bg-blue-600 text-white'
-                : isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-200 text-gray-500'
+                : 'bg-gray-200 text-gray-600'
             }`}>
               {awaitingInspection.length + sentToCustomer.length + approvedReady.length + declined.length}
             </span>
@@ -680,19 +629,15 @@ export default function MechanicDashboard() {
             onClick={() => setActiveTab('archived')}
             className={`flex-1 py-2.5 px-4 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
               activeTab === 'archived'
-                ? isDark
-                  ? 'bg-gray-800 text-white shadow-md shadow-black/20 border border-gray-700/50'
-                  : 'bg-white text-gray-900 shadow-sm border border-gray-200/80'
-                : isDark
-                  ? 'text-gray-500 hover:text-gray-300'
-                  : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-white text-gray-900 shadow-sm border border-gray-200/80'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             <span>Archived</span>
             <span className={`text-[10px] min-w-[20px] px-1.5 py-0.5 rounded-full font-bold leading-none ${
               activeTab === 'archived'
                 ? 'bg-blue-600 text-white'
-                : isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-200 text-gray-500'
+                : 'bg-gray-200 text-gray-600'
             }`}>
               {archived.length}
             </span>
@@ -984,48 +929,6 @@ export default function MechanicDashboard() {
                 </p>
               </div>
 
-              {/* Theme Selector */}
-              <div>
-                <label className={`block text-[10px] font-bold uppercase tracking-wider mb-1.5 ${
-                  isDark ? 'text-gray-400' : 'text-gray-500'
-                }`}>
-                  Theme Mode
-                </label>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsDark(false);
-                      localStorage.setItem('shopsnap_mechanic_theme', 'light');
-                    }}
-                    className={`flex-1 h-9 rounded-lg text-xs font-bold border transition-colors flex items-center justify-center gap-1.5 ${
-                      !isDark 
-                        ? 'bg-blue-600 border-blue-600 text-white shadow-xs' 
-                        : (isDark 
-                            ? 'bg-gray-800 border-gray-700 text-gray-300 hover:text-white' 
-                            : 'bg-gray-50 border-gray-250 text-gray-600')
-                    }`}
-                  >
-                    <Sun className="w-3.5 h-3.5" />
-                    <span>Light Mode</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsDark(true);
-                      localStorage.setItem('shopsnap_mechanic_theme', 'dark');
-                    }}
-                    className={`flex-1 h-9 rounded-lg text-xs font-bold border transition-colors flex items-center justify-center gap-1.5 ${
-                      isDark 
-                        ? 'bg-blue-600 border-blue-600 text-white shadow-xs' 
-                        : 'bg-white border-gray-300 text-gray-750 hover:border-gray-400'
-                    }`}
-                  >
-                    <Moon className="w-3.5 h-3.5" />
-                    <span>Dark Mode</span>
-                  </button>
-                </div>
-              </div>
 
               {/* Connection Status Switcher */}
               <div>
