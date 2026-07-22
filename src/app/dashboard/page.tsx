@@ -1058,6 +1058,7 @@ export default function MechanicDashboard() {
                     const cleanName = shopNameSetting.trim();
                     localStorage.setItem('shopsnap_shop_name', cleanName || 'ShopSnap');
                     localStorage.setItem('shopsnap_shop_province', shopProvinceSetting);
+                    setShowTaxWarning(false);
                     setIsSettingsOpen(false);
                     // Emit storage update event to alert any listening pages
                     window.dispatchEvent(new Event('storage_updated'));
