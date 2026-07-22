@@ -20,7 +20,7 @@ import {
   CheckCircle,
   Send
 } from 'lucide-react';
-import { db, isSupabaseConfigured, generateUUID } from '@/lib/db';
+import { db, isSupabaseConfigured, generateUUID, LineItem } from '@/lib/db';
 import { offlineQueue } from '@/lib/offline-queue';
 import { auth } from '@/lib/auth';
 import { BrowserMultiFormatReader, BarcodeFormat, DecodeHintType } from '@zxing/library';
@@ -81,9 +81,30 @@ function NewInspectionForm() {
   const [isOtherMake, setIsOtherMake] = useState<boolean>(false);
   const [isOtherModel, setIsOtherModel] = useState<boolean>(false);
   const [customerPhone, setCustomerPhone] = useState<string>('');
-  const [repairName, setRepairName] = useState<string>('');
-  const [estimatedCost, setEstimatedCost] = useState<string>('');
-  const [urgency, setUrgency] = useState<'URGENT' | 'RECOMMENDED' | 'MONITOR'>('RECOMMENDED');
+  const [lineItems, setLineItems] = useState<LineItem[]>([
+    { name: '', cost: 0, urgency: 'RECOMMENDED' }
+  ]);
+
+  const handleAddLineItem = () => {
+    setLineItems([...lineItems, { name: '', cost: 0, urgency: 'RECOMMENDED' }]);
+  };
+
+  const handleRemoveLineItem = (index: number) => {
+    if (lineItems.length > 1) {
+      const updated = lineItems.filter((_, idx) => idx !== index);
+      setLineItems(updated);
+    }
+  };
+
+  const handleLineItemChange = (index: number, field: keyof LineItem, value: any) => {
+    const updated = [...lineItems];
+    if (field === 'cost') {
+      updated[index].cost = parseFloat(value) || 0;
+    } else {
+      updated[index][field] = value as any;
+    }
+    setLineItems(updated);
+  };
   const [isScannerOpen, setIsScannerOpen] = useState<boolean>(false);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
   const [currentUser, setCurrentUser] = useState<{ email: string; name: string } | null>(null);
@@ -151,9 +172,13 @@ function NewInspectionForm() {
           setVehicleModel(data.vehicleModel);
           setVehicleVin(data.vin || '');
           setCustomerPhone(data.customerPhone);
-          setRepairName(data.repairName);
-          setEstimatedCost(data.estimatedCost.toString());
-          setUrgency(data.urgency);
+          if (data.items && data.items.length > 0) {
+            setLineItems(data.items);
+          } else {
+            setLineItems([
+              { name: data.repairName, cost: data.estimatedCost, urgency: data.urgency }
+            ]);
+          }
            if (data.advisorName) {
             setSelectedAdvisor(data.advisorName);
           }
@@ -253,12 +278,20 @@ function NewInspectionForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!vehicleMake || !vehicleModel || !customerPhone || !repairName || !estimatedCost) {
-      alert('Please fill out all required fields.');
+    const hasValidLineItems = lineItems.length > 0 && lineItems.every(item => item.name.trim() && item.cost >= 0);
+    if (!vehicleMake || !vehicleModel || !customerPhone || !hasValidLineItems) {
+      alert('Please fill out all required fields and ensure line items have a service name.');
       return;
     }
     setIsSubmitting(true);
-    const costNum = parseFloat(estimatedCost);
+    
+    const costNum = lineItems.reduce((sum, item) => sum + (item.cost || 0), 0);
+    const mainRepairName = lineItems[0].name || 'General Repair';
+    
+    let highestUrgency: 'URGENT' | 'RECOMMENDED' | 'MONITOR' = 'MONITOR';
+    if (lineItems.some(i => i.urgency === 'URGENT')) highestUrgency = 'URGENT';
+    else if (lineItems.some(i => i.urgency === 'RECOMMENDED')) highestUrgency = 'RECOMMENDED';
+
     const inspectionId = editId || generateUUID();
     const isEditing = !!editId;
 
@@ -270,13 +303,14 @@ function NewInspectionForm() {
       vehicleModel,
       vin: vehicleVin,
       customerPhone,
-      repairName,
+      repairName: mainRepairName,
       estimatedCost: costNum,
-      urgency,
+      urgency: highestUrgency,
       advisorName: selectedAdvisor || currentUser?.name || 'Advisor',
       advisorEmail: currentUser?.email || '',
       shopName: finalShopName,
       province: province || 'ON',
+      items: lineItems,
     };
 
     try {
@@ -396,7 +430,11 @@ function NewInspectionForm() {
         }
 
         const quoteUrl = `${window.location.origin}/quote/${inspectionId}`;
-        const smsText = `${metadata.shopName || 'ShopSnap'}: ${metadata.vehicleMake} ${metadata.vehicleModel} checkup. Required service: ${metadata.repairName}. Estimate: $${costNum.toFixed(2)}. Review details & approve here: ${quoteUrl}`;
+        const jobsSummary = lineItems.length > 1 
+          ? `${lineItems[0].name} & ${lineItems.length - 1} other jobs` 
+          : lineItems[0].name;
+          
+        const smsText = `${metadata.shopName || 'ShopSnap'}: ${metadata.vehicleMake} ${metadata.vehicleModel} checkup. Required service: ${jobsSummary}. Estimate: $${costNum.toFixed(2)}. Review details & approve here: ${quoteUrl}`;
         
         // Save locally for dashboard simulated toast overlay fallback
         localStorage.setItem('shopsnap_sms_log', JSON.stringify({
@@ -745,61 +783,96 @@ function NewInspectionForm() {
               />
             </div>
 
-            {/* Repair Details */}
-            <div>
-              <label className={`block text-[10px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Repair Name <span className="text-red-500">*</span></label>
-              <input 
-                type="text"
-                placeholder="e.g. Front Brake Pads & Rotors"
-                value={repairName}
-                onChange={(e) => setRepairName(e.target.value)}
-                className={`w-full h-12 px-3 rounded-xl border focus:border-blue-500 focus:outline-none text-sm ${
-                  isDark 
-                    ? 'bg-gray-955 border-gray-800 text-white' 
-                    : 'bg-gray-50 border-gray-300 text-gray-850'
-                }`}
-                required
-              />
-            </div>
+            {/* Repair Line Items Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <label className={`block text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                  Repair Line Items / Jobs <span className="text-red-500">*</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={handleAddLineItem}
+                  className="text-xs font-extrabold text-blue-600 hover:text-blue-750 flex items-center gap-1"
+                >
+                  <span>+ Add Job / Repair</span>
+                </button>
+              </div>
 
-            {/* Price */}
-            <div>
-              <label className={`block text-[10px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Estimated Cost ($) <span className="text-red-500">*</span></label>
-              <input 
-                type="number"
-                step="0.01"
-                placeholder="e.g. 450.00"
-                value={estimatedCost}
-                onChange={(e) => setEstimatedCost(e.target.value)}
-                className={`w-full h-12 px-3 rounded-xl border focus:border-blue-500 focus:outline-none text-sm ${
-                  isDark 
-                    ? 'bg-gray-955 border-gray-800 text-white' 
-                    : 'bg-gray-50 border-gray-300 text-gray-850'
-                }`}
-                required
-              />
-            </div>
+              <div className="space-y-3.5">
+                {lineItems.map((item, index) => (
+                  <div key={index} className={`p-4 rounded-2xl border space-y-3 relative ${
+                    isDark ? 'bg-gray-950/40 border-gray-805' : 'bg-gray-50/50 border-gray-200'
+                  }`}>
+                    {lineItems.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveLineItem(index)}
+                        className="absolute right-3 top-3.5 p-1.5 rounded-lg text-red-500 hover:bg-red-500/10 transition-colors"
+                        title="Remove Job"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
 
-            {/* Urgency selection */}
-            <div>
-              <label className={`block text-[10px] font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Urgency Level</label>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { value: 'URGENT', label: 'Urgent', color: isDark ? 'border-red-550/20 text-red-400 bg-red-500/5' : 'border-red-200 text-red-600 bg-red-50/50', activeColor: 'bg-red-600 text-white border-red-500' },
-                  { value: 'RECOMMENDED', label: 'Recommend', color: isDark ? 'border-amber-550/20 text-amber-400 bg-amber-500/5' : 'border-amber-200 text-amber-600 bg-amber-50/50', activeColor: 'bg-amber-600 text-white border-amber-500' },
-                  { value: 'MONITOR', label: 'Monitor', color: isDark ? 'border-gray-800 text-gray-400 bg-gray-800/10' : 'border-gray-300 text-gray-500 bg-gray-50', activeColor: 'bg-gray-655 text-white border-gray-500' }
-                ].map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setUrgency(option.value as any)}
-                    className={`h-11 rounded-xl text-xs font-bold border transition-all active:scale-95 flex items-center justify-center gap-1.5 ${
-                      urgency === option.value ? option.activeColor : option.color
-                    }`}
-                  >
-                    {urgency === option.value && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                    {option.label}
-                  </button>
+                    <div className="font-extrabold text-xs text-blue-500 uppercase tracking-wide">
+                      Job #{index + 1}
+                    </div>
+
+                    {/* Job Name */}
+                    <div className="space-y-1">
+                      <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400">Service Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Front Brake Pads & Rotors"
+                        value={item.name}
+                        onChange={(e) => handleLineItemChange(index, 'name', e.target.value)}
+                        className={`w-full h-11 px-3 rounded-xl border focus:border-blue-500 focus:outline-none text-xs font-semibold ${
+                          isDark 
+                            ? 'bg-gray-955 border-gray-800 text-white placeholder-gray-600' 
+                            : 'bg-white border-gray-300 text-gray-850 placeholder-gray-400'
+                        }`}
+                        required
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Job Cost */}
+                      <div className="space-y-1">
+                        <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400">Estimated Cost ($)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          placeholder="e.g. 450.00"
+                          value={item.cost || ''}
+                          onChange={(e) => handleLineItemChange(index, 'cost', e.target.value)}
+                          className={`w-full h-11 px-3 rounded-xl border focus:border-blue-500 focus:outline-none text-xs font-semibold ${
+                            isDark 
+                              ? 'bg-gray-955 border-gray-800 text-white placeholder-gray-600' 
+                              : 'bg-white border-gray-300 text-gray-850 placeholder-gray-400'
+                          }`}
+                          required
+                        />
+                      </div>
+
+                      {/* Job Urgency */}
+                      <div className="space-y-1">
+                        <label className="block text-[9px] font-bold uppercase tracking-wider text-gray-400">Urgency Level</label>
+                        <select
+                          value={item.urgency}
+                          onChange={(e) => handleLineItemChange(index, 'urgency', e.target.value)}
+                          className={`w-full h-11 px-3 rounded-xl border focus:border-blue-500 focus:outline-none text-xs font-bold ${
+                            isDark 
+                              ? 'bg-gray-955 border-gray-800 text-white' 
+                              : 'bg-white border-gray-300 text-gray-850'
+                          }`}
+                        >
+                          <option value="URGENT">Urgent</option>
+                          <option value="RECOMMENDED">Recommended</option>
+                          <option value="MONITOR">Monitor</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>

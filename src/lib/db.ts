@@ -3,6 +3,12 @@ import { createClient } from '@supabase/supabase-js';
 export type UrgencyLevel = 'URGENT' | 'RECOMMENDED' | 'MONITOR';
 export type InspectionStatus = 'AWAITING_INSPECTION' | 'SENT' | 'APPROVED' | 'DECLINED' | 'ARCHIVED';
 
+export interface LineItem {
+  name: string;
+  cost: number;
+  urgency: 'URGENT' | 'RECOMMENDED' | 'MONITOR';
+}
+
 export interface Inspection {
   id: string;
   vehicleYear: number;
@@ -23,6 +29,7 @@ export interface Inspection {
   advisorEmail?: string;
   shopName?: string;
   province?: string;
+  items?: LineItem[];
 }
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
