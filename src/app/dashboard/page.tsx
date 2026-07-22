@@ -358,32 +358,20 @@ export default function MechanicDashboard() {
         </div>
 
         {/* Action controls */}
-        <div className="flex items-center gap-2.5">
-          {/* Light/Dark Toggle */}
-          <button
-            onClick={toggleTheme}
-            className={`p-2 rounded-xl border transition-colors ${
-              isDark 
-                ? 'bg-gray-800/40 border-gray-700 text-gray-300 hover:text-white' 
-                : 'bg-gray-100 border-gray-305 text-gray-605 hover:text-gray-900 hover:bg-gray-250'
-            }`}
-            aria-label="Toggle theme"
-          >
-            {isDark ? <Sun className="w-4 h-4 text-yellow-450" /> : <Moon className="w-4 h-4" />}
-          </button>
-
+        <div className="flex items-center gap-2">
           {/* Settings Button */}
           <button
             onClick={() => setIsSettingsOpen(true)}
-            className={`p-2 rounded-xl border transition-colors ${
+            className={`px-3 py-2 rounded-xl border transition-colors flex items-center gap-1.5 text-xs font-bold ${
               isDark 
                 ? 'bg-gray-800/40 border-gray-700 text-gray-305 hover:text-white' 
-                : 'bg-gray-100 border-gray-305 text-gray-605 hover:text-gray-900 hover:bg-gray-250'
+                : 'bg-gray-100 border-gray-305 text-gray-605 hover:text-gray-900 hover:bg-gray-200'
             }`}
             title="Shop Settings"
             aria-label="Shop Settings"
           >
-            <Settings className="w-4 h-4 animate-[spin_30s_linear_infinite]" />
+            <Settings className="w-3.5 h-3.5 animate-[spin_40s_linear_infinite]" />
+            <span>Settings</span>
           </button>
 
           {/* Logout Button */}
@@ -392,15 +380,16 @@ export default function MechanicDashboard() {
               await auth.logout();
               router.push('/login');
             }}
-            className={`p-2 rounded-xl border transition-colors ${
+            className={`px-3 py-2 rounded-xl border transition-colors flex items-center gap-1.5 text-xs font-bold ${
               isDark 
-                ? 'bg-gray-800/40 border-gray-700 text-red-400 hover:text-red-300 hover:bg-red-500/10' 
-                : 'bg-gray-100 border-gray-305 text-red-650 hover:text-red-700 hover:bg-red-50'
+                ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:text-red-300 hover:bg-red-500/20' 
+                : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
             }`}
             title="Log Out"
             aria-label="Log Out"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Sign Out</span>
           </button>
 
           {offlineCount > 0 && (
@@ -413,27 +402,6 @@ export default function MechanicDashboard() {
               <span>{offlineCount} Queued</span>
             </button>
           )}
-
-          <button 
-            onClick={toggleNetwork}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
-              isOnline 
-                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20' 
-                : 'bg-red-505/10 text-red-400 border-red-500/20 hover:bg-red-500/20'
-            }`}
-          >
-            {isOnline ? (
-              <>
-                <Wifi className="w-3.5 h-3.5 text-emerald-455" />
-                <span className="hidden sm:inline">Online</span>
-              </>
-            ) : (
-              <>
-                <WifiOff className="w-3.5 h-3.5 text-red-455" />
-                <span className="hidden sm:inline">Offline Mode</span>
-              </>
-            )}
-          </button>
         </div>
       </header>
 
@@ -865,6 +833,70 @@ export default function MechanicDashboard() {
                 </p>
               </div>
 
+              {/* Theme Selector */}
+              <div>
+                <label className={`block text-[10px] font-bold uppercase tracking-wider mb-1.5 ${
+                  isDark ? 'text-gray-400' : 'text-gray-500'
+                }`}>
+                  Theme Mode
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsDark(false);
+                      localStorage.setItem('shopsnap_mechanic_theme', 'light');
+                    }}
+                    className={`flex-1 h-9 rounded-lg text-xs font-bold border transition-colors flex items-center justify-center gap-1.5 ${
+                      !isDark 
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-xs' 
+                        : (isDark 
+                            ? 'bg-gray-800 border-gray-700 text-gray-300 hover:text-white' 
+                            : 'bg-gray-50 border-gray-250 text-gray-600')
+                    }`}
+                  >
+                    <Sun className="w-3.5 h-3.5" />
+                    <span>Light Mode</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsDark(true);
+                      localStorage.setItem('shopsnap_mechanic_theme', 'dark');
+                    }}
+                    className={`flex-1 h-9 rounded-lg text-xs font-bold border transition-colors flex items-center justify-center gap-1.5 ${
+                      isDark 
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-xs' 
+                        : 'bg-white border-gray-300 text-gray-750 hover:border-gray-400'
+                    }`}
+                  >
+                    <Moon className="w-3.5 h-3.5" />
+                    <span>Dark Mode</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Connection Status Switcher */}
+              <div>
+                <label className={`block text-[10px] font-bold uppercase tracking-wider mb-1.5 ${
+                  isDark ? 'text-gray-400' : 'text-gray-500'
+                }`}>
+                  Network Status
+                </label>
+                <button
+                  type="button"
+                  onClick={toggleNetwork}
+                  className={`w-full h-9 rounded-lg text-xs font-bold border transition-colors flex items-center justify-center gap-1.5 ${
+                    isOnline 
+                      ? 'bg-emerald-555/10 border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/20' 
+                      : 'bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500/20'
+                  }`}
+                >
+                  {isOnline ? <Wifi className="w-3.5 h-3.5" /> : <WifiOff className="w-3.5 h-3.5" />}
+                  <span>{isOnline ? 'Online (Connected)' : 'Offline Mode (Simulated)'}</span>
+                </button>
+              </div>
+
               <div className="flex gap-2.5 pt-2">
                 <button
                   type="button"
@@ -872,7 +904,7 @@ export default function MechanicDashboard() {
                   className={`flex-1 h-11 rounded-xl text-xs font-bold border transition-colors ${
                     isDark 
                       ? 'bg-gray-800/40 border-gray-700 text-gray-300 hover:text-white' 
-                      : 'bg-gray-100 border-gray-300 text-gray-600 hover:text-gray-950 hover:bg-gray-200'
+                      : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-950 hover:bg-gray-200'
                   }`}
                 >
                   Cancel
