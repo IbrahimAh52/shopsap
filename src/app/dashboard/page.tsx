@@ -1110,11 +1110,28 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
         </div>
 
         {/* Details - Always visible */}
-        <div className="mt-3.5 space-y-1">
-          <p className={`text-sm font-bold line-clamp-1 ${isDark ? 'text-gray-300' : 'text-gray-750'}`}>{item.repairName}</p>
-          <div className="flex items-center justify-between text-xs pt-1.5">
-            <span className="text-gray-405">Estimate:</span>
-            <span className={`font-extrabold text-sm ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{formatCost(item.estimatedCost)}</span>
+        <div className="mt-3.5 space-y-2">
+          {item.items && item.items.length > 0 ? (
+            <div className="space-y-1">
+              {item.items.map((line, idx) => (
+                <div key={idx} className="flex items-start justify-between text-xs gap-2">
+                  <span className={`font-bold leading-tight ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    • {line.name}
+                  </span>
+                  <span className={`font-mono text-[10px] shrink-0 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {formatCost(line.cost)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className={`text-sm font-bold line-clamp-1 ${isDark ? 'text-gray-300' : 'text-gray-750'}`}>{item.repairName}</p>
+          )}
+          <div className={`flex items-center justify-between text-xs pt-2 border-t border-dashed ${
+            isDark ? 'border-gray-800' : 'border-gray-150'
+          }`}>
+            <span className="text-gray-405 font-bold uppercase tracking-wider text-[9px]">Total Estimate:</span>
+            <span className={`font-black text-sm ${isDark ? 'text-gray-100' : 'text-blue-600'}`}>{formatCost(item.estimatedCost)}</span>
           </div>
         </div>
       </div>
@@ -1293,11 +1310,28 @@ function ArchivedCard({ item, isDark, formatCost }: ArchivedCardProps) {
         </div>
 
         {/* Details */}
-        <div className="mt-3.5 space-y-1">
-          <p className={`text-sm font-bold line-clamp-1 ${isDark ? 'text-gray-300' : 'text-gray-750'}`}>{item.repairName}</p>
-          <div className="flex items-center justify-between text-xs pt-1.5">
-            <span className="text-gray-405">Estimate:</span>
-            <span className={`font-extrabold text-sm ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{formatCost(item.estimatedCost)}</span>
+        <div className="mt-3.5 space-y-2">
+          {item.items && item.items.length > 0 ? (
+            <div className="space-y-1">
+              {item.items.map((line, idx) => (
+                <div key={idx} className="flex items-start justify-between text-xs gap-2">
+                  <span className={`font-bold leading-tight ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                    • {line.name}
+                  </span>
+                  <span className={`font-mono text-[10px] shrink-0 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {formatCost(line.cost)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className={`text-sm font-bold line-clamp-1 ${isDark ? 'text-gray-300' : 'text-gray-750'}`}>{item.repairName}</p>
+          )}
+          <div className={`flex items-center justify-between text-xs pt-2 border-t border-dashed ${
+            isDark ? 'border-gray-800' : 'border-gray-150'
+          }`}>
+            <span className="text-gray-405 font-bold uppercase tracking-wider text-[9px]">Total Estimate:</span>
+            <span className={`font-black text-sm ${isDark ? 'text-gray-100' : 'text-blue-600'}`}>{formatCost(item.estimatedCost)}</span>
           </div>
         </div>
       </div>
