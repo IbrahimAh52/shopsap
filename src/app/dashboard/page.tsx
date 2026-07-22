@@ -495,33 +495,49 @@ export default function MechanicDashboard() {
           ))}
         </section>
 
-        {/* Search & Tabs Controls */}
-        <div className={`p-4 rounded-2xl border my-6 flex flex-col md:flex-row gap-4 justify-between items-center transition-colors duration-200 ${
+        {/* Main Tab Navigation */}
+        <div className="flex border-b border-gray-200 dark:border-gray-800/80 mt-6 mb-4 select-none">
+          <button
+            onClick={() => setActiveTab('active')}
+            className={`pb-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-1.5 ${
+              activeTab === 'active'
+                ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-white'
+            }`}
+          >
+            <span>Active Board</span>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+              activeTab === 'active'
+                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                : 'bg-gray-100 text-gray-600 dark:bg-gray-800/40 dark:text-gray-400'
+            }`}>
+              {awaitingInspection.length + sentToCustomer.length + approvedReady.length + declined.length}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab('archived')}
+            className={`pb-3 px-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-1.5 ${
+              activeTab === 'archived'
+                ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-white'
+            }`}
+          >
+            <span>Archived History</span>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+              activeTab === 'archived'
+                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                : 'bg-gray-100 text-gray-600 dark:bg-gray-800/40 dark:text-gray-400'
+            }`}>
+              {archived.length}
+            </span>
+          </button>
+        </div>
+
+        {/* Search & Filters Controls */}
+        <div className={`p-4 rounded-2xl border mb-6 flex flex-col md:flex-row gap-4 justify-between items-center transition-colors duration-200 ${
           isDark ? 'bg-[#0f172a]/40 border-gray-805/85' : 'bg-white border-gray-200 shadow-2xs'
         }`}>
-          {/* Tab Switcher */}
-          <div className="flex items-center gap-1.5 p-1 bg-gray-50/5 dark:bg-gray-950/20 rounded-xl border border-gray-200/50 dark:border-gray-800/80 w-full md:w-auto">
-            <button
-              onClick={() => setActiveTab('active')}
-              className={`flex-1 md:flex-initial px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${
-                activeTab === 'active'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
-              }`}
-            >
-              Active Board ({awaitingInspection.length + sentToCustomer.length + approvedReady.length + declined.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('archived')}
-              className={`flex-1 md:flex-initial px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${
-                activeTab === 'archived'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
-              }`}
-            >
-              Archived History ({archived.length})
-            </button>
-          </div>          {/* Advisor Filter Dropdown */}
+          {/* Advisor Filter Dropdown */}
           <div className="flex items-center gap-2 w-full md:w-auto">
             <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-550'}`}>
               Advisor:

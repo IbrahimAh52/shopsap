@@ -178,14 +178,14 @@ export const db = {
       
       let list = (data || []).map(row => decodeInspection(row));
       if (userEmail) {
-        list = list.filter(row => row.advisorEmail?.toLowerCase() === userEmail.toLowerCase());
+        list = list.filter(row => !row.advisorEmail || row.advisorEmail.toLowerCase() === userEmail.toLowerCase());
       }
       return list;
     }
     
     let list = getMockData().map(row => decodeInspection(row));
     if (userEmail) {
-      list = list.filter(row => row.advisorEmail?.toLowerCase() === userEmail.toLowerCase());
+      list = list.filter(row => !row.advisorEmail || row.advisorEmail.toLowerCase() === userEmail.toLowerCase());
     }
     return list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   },
