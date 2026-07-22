@@ -376,9 +376,9 @@ export default function CustomerQuotePortal() {
       )}
 
       {/* Trust Footer */}
-      <footer className="text-center py-6 text-[10px] text-gray-400 font-medium space-y-1">
-        <p>🔒 256-bit Bank-Grade Encryption. All interactions are secure and logged.</p>
-        <p>© 2026 ShopSnap Transaction Portal. All rights reserved.</p>
+      <footer className="text-center py-8 text-[11px] text-gray-400 font-semibold space-y-1 bg-gray-100/30 border-t border-gray-200/50 mt-12 w-full">
+        <p>Powered by <span className="font-extrabold text-gray-600 tracking-tight">ShopSnap</span></p>
+        <p className="text-[10px] text-gray-400 font-normal">© {new Date().getFullYear()} ShopSnap Transaction Portal. All rights reserved.</p>
       </footer>
     </div>
   );
