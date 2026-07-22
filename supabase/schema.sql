@@ -10,7 +10,7 @@ CREATE TABLE inspections (
   vehicle_model VARCHAR(255) NOT NULL,
   vin VARCHAR(17),
   customer_phone VARCHAR(50) NOT NULL,
-  repair_name VARCHAR(255) NOT NULL,
+  repair_name TEXT NOT NULL,
   estimated_cost NUMERIC(10, 2) NOT NULL,
   urgency urgency_level NOT NULL DEFAULT 'RECOMMENDED',
   status inspection_status NOT NULL DEFAULT 'AWAITING_INSPECTION',
