@@ -160,7 +160,8 @@ export default function CustomerQuotePortal() {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
   };
 
-  const provCode = (inspection.province || 'ON').toUpperCase();
+  const defaultProv = typeof window !== 'undefined' ? (localStorage.getItem('shopsnap_shop_province') || 'ON') : 'ON';
+  const provCode = (inspection.province || defaultProv).toUpperCase();
   const taxInfo = PROVINCE_TAXES[provCode] || PROVINCE_TAXES['ON'];
   
   const subtotal = inspection.estimatedCost || 0;
