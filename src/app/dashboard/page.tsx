@@ -1055,15 +1055,11 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
   const displayId = item.id.split('-')[1] || item.id.slice(0, 6);
 
   return (
-    <div className={`relative rounded-3xl border p-4 transition-all duration-200 shadow-md flex flex-col justify-between overflow-hidden ${
-      isDark 
-        ? 'bg-[#0e1726]/90 border-gray-800 hover:border-gray-700 text-gray-100' 
-        : 'bg-white border-gray-200/90 hover:border-gray-300 text-gray-900'
-    }`}>
+    <div className="relative rounded-3xl border border-gray-200/90 bg-white p-5 shadow-md hover:shadow-lg transition-all duration-200 flex flex-col justify-between overflow-hidden text-gray-900">
       {/* Top Receipt Bar */}
       <div>
-        <div className="flex items-center justify-between pb-2 mb-3 border-b border-dashed border-gray-200 dark:border-gray-800 text-[10px] font-bold uppercase tracking-wider">
-          <span className="text-blue-600 dark:text-blue-400 flex items-center gap-1">
+        <div className="flex items-center justify-between pb-2 mb-3 border-b border-dashed border-gray-200 text-[10px] font-bold uppercase tracking-wider">
+          <span className="text-blue-600 flex items-center gap-1">
             <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
             RECEIPT #{displayId}
           </span>
@@ -1074,7 +1070,7 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
             <button 
               type="button" 
               onClick={() => setIsExpanded(!isExpanded)}
-              className="md:hidden text-gray-400 hover:text-gray-200"
+              className="md:hidden text-gray-400 hover:text-gray-600"
             >
               <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : 'rotate-0'}`} />
             </button>
@@ -1086,24 +1082,24 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
           onClick={() => setIsExpanded(!isExpanded)}
           className="cursor-pointer md:cursor-default"
         >
-          <h3 className="font-extrabold text-base tracking-tight leading-tight">
+          <h3 className="font-extrabold text-base tracking-tight leading-tight text-gray-900">
             {item.vehicleYear} {item.vehicleMake} {item.vehicleModel}
           </h3>
 
           <div className={`md:block space-y-1 mt-1.5 ${isExpanded ? 'block' : 'hidden'}`}>
-            <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 font-medium">
+            <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
               <Phone className="w-3 h-3 text-gray-400 shrink-0" />
               <span>{item.customerPhone}</span>
             </div>
 
             <div className="flex items-center gap-2 flex-wrap pt-0.5">
               {item.vin && (
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-md border border-blue-100 dark:border-blue-800/50">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md border border-blue-100">
                   VIN: {item.vin}
                 </span>
               )}
               {item.advisorName && (
-                <span className="text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-md">
+                <span className="text-[10px] font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md">
                   Adv: {item.advisorName}
                 </span>
               )}
@@ -1112,7 +1108,7 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
         </div>
 
         {/* Receipt Dotted Separator */}
-        <div className="my-3 border-t border-dashed border-gray-200 dark:border-gray-800" />
+        <div className="my-3 border-t border-dashed border-gray-200" />
 
         {/* Itemized Services Breakdown */}
         <div className="space-y-2">
@@ -1130,23 +1126,23 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
                 <div key={idx} className="flex items-start justify-between text-xs gap-2">
                   <div className="flex items-start gap-1.5 min-w-0">
                     <span className="text-gray-400 shrink-0">•</span>
-                    <span className="font-semibold leading-snug line-clamp-1">{line.name}</span>
+                    <span className="font-semibold leading-snug line-clamp-1 text-gray-800">{line.name}</span>
                   </div>
-                  <span className="font-mono text-xs font-bold shrink-0">{formatCost(line.cost)}</span>
+                  <span className="font-mono text-xs font-bold shrink-0 text-gray-900">{formatCost(line.cost)}</span>
                 </div>
               ))
             ) : (
               <div className="flex items-start justify-between text-xs">
-                <span className="font-semibold line-clamp-1">{item.repairName}</span>
-                <span className="font-mono text-xs font-bold">{formatCost(item.estimatedCost)}</span>
+                <span className="font-semibold line-clamp-1 text-gray-800">{item.repairName}</span>
+                <span className="font-mono text-xs font-bold text-gray-900">{formatCost(item.estimatedCost)}</span>
               </div>
             )}
           </div>
 
           {/* Subtotal Total Box */}
-          <div className="mt-3 p-2.5 rounded-2xl bg-gray-50 dark:bg-gray-900/60 border border-gray-150 dark:border-gray-800/80 flex items-center justify-between">
+          <div className="mt-3 p-2.5 rounded-2xl bg-gray-50 border border-gray-150 flex items-center justify-between">
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-500">Total Estimate</span>
-            <span className="text-base font-black text-blue-600 dark:text-blue-400">{formatCost(item.estimatedCost)}</span>
+            <span className="text-base font-black text-blue-600">{formatCost(item.estimatedCost)}</span>
           </div>
         </div>
       </div>
@@ -1154,7 +1150,7 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
       {/* Card Action Footer */}
       <div className={`border-t mt-4 pt-3 flex flex-col gap-2.5 md:flex ${
         isExpanded ? 'flex' : 'hidden'
-      } border-gray-150 dark:border-gray-800/80`}>
+      } border-gray-150`}>
         {/* Status Header line */}
         <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-gray-500">
           <span className="flex items-center gap-1.5">
@@ -1163,7 +1159,7 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
           </span>
 
           {item.status === 'APPROVED' && item.signature && (
-            <span className="text-[9px] font-mono text-emerald-600 dark:text-emerald-400 normal-case">
+            <span className="text-[9px] font-mono text-emerald-600 font-bold normal-case">
               Signed by: {item.signature}
             </span>
           )}
@@ -1175,16 +1171,16 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
             <div className="flex items-center gap-2 w-full">
               <Link
                 href={`/dashboard/new?id=${item.id}`}
-                className="flex-1 h-10 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors shadow-xs"
+                className="flex-1 h-10 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors shadow-2xs"
               >
-                <Camera className="w-3.5 h-3.5 text-blue-500" />
+                <Camera className="w-3.5 h-3.5 text-blue-600" />
                 <span>{item.videoUrl ? 'Edit Jobs' : 'Diagnose & Record'}</span>
               </Link>
               {item.videoUrl && onSendQuoteDirect && (
                 <button
                   type="button"
                   onClick={() => onSendQuoteDirect(item)}
-                  className="flex-1 h-10 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center justify-center gap-1.5 border border-blue-500/20 shadow-xs animate-pulse"
+                  className="flex-1 h-10 rounded-xl text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white transition-all flex items-center justify-center gap-1.5 border border-blue-500/20 shadow-sm shadow-blue-500/20 animate-pulse"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>Send Quote</span>
@@ -1198,9 +1194,9 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
               {/* Edit Jobs */}
               <Link
                 href={`/dashboard/new?id=${item.id}`}
-                className="h-9 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 transition-colors"
+                className="h-9 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1 border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors shadow-2xs"
               >
-                <Wrench className="w-3 h-3 text-blue-500" />
+                <Wrench className="w-3 h-3 text-blue-600" />
                 <span>Edit Jobs</span>
               </Link>
 
@@ -1208,7 +1204,7 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
               <button 
                 type="button"
                 onClick={() => onResendSms ? onResendSms(item) : onCopyLink(item.id)}
-                className="h-9 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white transition-colors shadow-xs"
+                className="h-9 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white transition-all shadow-sm shadow-blue-500/20"
               >
                 <Send className="w-3 h-3" />
                 <span>Resend Text</span>
@@ -1221,7 +1217,7 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
                 className={`h-9 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1 border transition-colors ${
                   copiedId === item.id 
                     ? 'bg-emerald-600 border-emerald-500 text-white' 
-                    : 'border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800/60 text-gray-700 dark:text-gray-300'
+                    : 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100'
                 }`}
               >
                 {copiedId === item.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
@@ -1232,7 +1228,7 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
               <button
                 type="button"
                 onClick={() => onComplete(item.id)}
-                className="h-9 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1 border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 transition-colors"
+                className="h-9 rounded-xl text-[10px] font-extrabold flex items-center justify-center gap-1 border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
               >
                 <Archive className="w-3 h-3" />
                 <span>Close Out</span>
@@ -1244,16 +1240,16 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
             <div className="flex items-center gap-2 w-full">
               <Link
                 href={`/dashboard/new?id=${item.id}`}
-                className="flex-1 h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 transition-colors"
+                className="flex-1 h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors shadow-2xs"
               >
-                <Wrench className="w-3.5 h-3.5 text-blue-500" />
+                <Wrench className="w-3.5 h-3.5 text-blue-600" />
                 <span>Edit Jobs</span>
               </Link>
               {onResendSms && (
                 <button
                   type="button"
                   onClick={() => onResendSms(item)}
-                  className="flex-1 h-9 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center justify-center gap-1 border border-blue-500/20 shadow-xs"
+                  className="flex-1 h-9 rounded-xl text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white transition-all flex items-center justify-center gap-1 border border-blue-500/20 shadow-sm shadow-blue-500/20"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>Resend Receipt</span>
@@ -1262,7 +1258,7 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
               <button
                 type="button"
                 onClick={() => onComplete(item.id)}
-                className="flex-1 h-9 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors flex items-center justify-center gap-1 border border-emerald-600/20 shadow-xs"
+                className="flex-1 h-9 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors flex items-center justify-center gap-1 border border-emerald-600/20 shadow-sm shadow-emerald-500/20"
               >
                 <CheckCircle className="w-3.5 h-3.5" />
                 <span>Close Out</span>
@@ -1274,16 +1270,16 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
             <div className="flex items-center gap-2 w-full">
               <Link
                 href={`/dashboard/new?id=${item.id}`}
-                className="flex-1 h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 transition-colors"
+                className="flex-1 h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors shadow-2xs"
               >
-                <Wrench className="w-3.5 h-3.5 text-blue-500" />
+                <Wrench className="w-3.5 h-3.5 text-blue-600" />
                 <span>Edit Jobs</span>
               </Link>
               {onResendSms && (
                 <button
                   type="button"
                   onClick={() => onResendSms(item)}
-                  className="flex-1 h-9 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center justify-center gap-1 border border-blue-500/20 shadow-xs"
+                  className="flex-1 h-9 rounded-xl text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white transition-all flex items-center justify-center gap-1 border border-blue-500/20 shadow-sm shadow-blue-500/20"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>Resend Quote</span>
@@ -1292,7 +1288,7 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
               <button
                 type="button"
                 onClick={() => onComplete(item.id)}
-                className="flex-1 h-9 rounded-xl text-xs font-bold border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 transition-colors flex items-center justify-center gap-1"
+                className="flex-1 h-9 rounded-xl text-xs font-bold border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors flex items-center justify-center gap-1 shadow-2xs"
               >
                 <Archive className="w-3.5 h-3.5" />
                 <span>Close Out</span>
@@ -1327,68 +1323,66 @@ function ArchivedCard({ item, isDark, formatCost, onResendSms }: ArchivedCardPro
   const displayId = item.id.split('-')[1] || item.id.slice(0, 6);
 
   return (
-    <div className={`relative rounded-3xl border p-4 transition-all duration-200 shadow-md flex flex-col justify-between overflow-hidden ${
-      isDark ? 'bg-[#0e1726]/75 border-gray-800 text-gray-100' : 'bg-white border-gray-200/90 text-gray-900'
-    }`}>
+    <div className="relative rounded-3xl border border-gray-200/90 bg-white p-5 shadow-md hover:shadow-lg transition-all duration-200 flex flex-col justify-between overflow-hidden text-gray-900">
       <div>
-        <div className="flex items-center justify-between pb-2 mb-3 border-b border-dashed border-gray-200 dark:border-gray-800 text-[10px] font-bold uppercase tracking-wider">
-          <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1">
+        <div className="flex items-center justify-between pb-2 mb-3 border-b border-dashed border-gray-200 text-[10px] font-bold uppercase tracking-wider">
+          <span className="text-gray-500 flex items-center gap-1">
             <ShieldCheck className="w-3.5 h-3.5 text-gray-400" />
             ARCHIVED RECEIPT #{displayId}
           </span>
-          <span className="px-2 py-0.5 rounded-full border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-[9px]">
+          <span className="px-2 py-0.5 rounded-full border border-gray-200 bg-gray-100 text-gray-600 text-[9px] font-bold">
             CLOSED OUT
           </span>
         </div>
 
-        <h3 className="font-extrabold text-base tracking-tight leading-tight">
+        <h3 className="font-extrabold text-base tracking-tight leading-tight text-gray-900">
           {item.vehicleYear} {item.vehicleMake} {item.vehicleModel}
         </h3>
 
         <div className="flex items-center gap-2 flex-wrap mt-1.5">
-          <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 font-medium">
+          <span className="text-xs text-gray-500 flex items-center gap-1 font-medium">
             <Phone className="w-3 h-3 text-gray-400" /> {item.customerPhone}
           </span>
           {item.vin && (
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-md border border-blue-100 dark:border-blue-800/50">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md border border-blue-100">
               VIN: {item.vin}
             </span>
           )}
         </div>
 
-        <div className="my-3 border-t border-dashed border-gray-200 dark:border-gray-800" />
+        <div className="my-3 border-t border-dashed border-gray-200" />
 
         {/* Itemized breakdown */}
         <div className="space-y-1.5">
           {item.items && item.items.length > 0 ? (
             item.items.map((line, idx) => (
               <div key={idx} className="flex items-start justify-between text-xs gap-2">
-                <span className="font-semibold leading-snug line-clamp-1">• {line.name}</span>
-                <span className="font-mono text-xs font-bold">{formatCost(line.cost)}</span>
+                <span className="font-semibold leading-snug line-clamp-1 text-gray-800">• {line.name}</span>
+                <span className="font-mono text-xs font-bold text-gray-900">{formatCost(line.cost)}</span>
               </div>
             ))
           ) : (
             <div className="flex items-start justify-between text-xs">
-              <span className="font-semibold line-clamp-1">{item.repairName}</span>
-              <span className="font-mono text-xs font-bold">{formatCost(item.estimatedCost)}</span>
+              <span className="font-semibold line-clamp-1 text-gray-800">{item.repairName}</span>
+              <span className="font-mono text-xs font-bold text-gray-900">{formatCost(item.estimatedCost)}</span>
             </div>
           )}
 
-          <div className="mt-3 p-2.5 rounded-2xl bg-gray-50 dark:bg-gray-900/60 border border-gray-150 dark:border-gray-800/80 flex items-center justify-between">
+          <div className="mt-3 p-2.5 rounded-2xl bg-gray-50 border border-gray-150 flex items-center justify-between">
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-500">Archived Total</span>
-            <span className="text-base font-black text-gray-900 dark:text-gray-100">{formatCost(item.estimatedCost)}</span>
+            <span className="text-base font-black text-gray-900">{formatCost(item.estimatedCost)}</span>
           </div>
         </div>
       </div>
 
-      <div className="border-t mt-4 pt-3 space-y-2 border-gray-150 dark:border-gray-800/80">
+      <div className="border-t mt-4 pt-3 space-y-2 border-gray-150">
         <div className="flex items-center justify-between text-[10px] text-gray-500">
           <span className="font-semibold uppercase tracking-wider">Date Closed</span>
           <span className="font-mono">{formattedDate}</span>
         </div>
 
         {item.signature ? (
-          <div className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">
+          <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-bold uppercase tracking-wider">
             <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
             <span>Approved by {item.signature}</span>
           </div>
@@ -1404,7 +1398,7 @@ function ArchivedCard({ item, isDark, formatCost, onResendSms }: ArchivedCardPro
             href={`/quote/${item.id}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 h-9 rounded-xl text-xs font-bold border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 transition-colors flex items-center justify-center gap-1.5"
+            className="flex-1 h-9 rounded-xl text-xs font-bold border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
           >
             <ExternalLink className="w-3.5 h-3.5 text-blue-500" />
             <span>View Receipt</span>
@@ -1413,7 +1407,7 @@ function ArchivedCard({ item, isDark, formatCost, onResendSms }: ArchivedCardPro
             <button
               type="button"
               onClick={() => onResendSms(item)}
-              className="flex-1 h-9 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center justify-center gap-1.5 shadow-xs"
+              className="flex-1 h-9 rounded-xl text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white transition-all flex items-center justify-center gap-1.5 shadow-sm shadow-blue-500/20 border border-blue-500/30"
             >
               <Send className="w-3.5 h-3.5" />
               <span>Resend Text</span>
