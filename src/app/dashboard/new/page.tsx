@@ -16,7 +16,9 @@ import {
   Moon,
   QrCode,
   Sparkles,
-  AlertCircle
+  AlertCircle,
+  CheckCircle,
+  Send
 } from 'lucide-react';
 import { db, isSupabaseConfigured, generateUUID } from '@/lib/db';
 import { offlineQueue } from '@/lib/offline-queue';
@@ -91,6 +93,7 @@ function NewInspectionForm() {
   const [selectedAdvisor, setSelectedAdvisor] = useState<string>('');
   const [isAddingAdvisor, setIsAddingAdvisor] = useState<boolean>(false);
   const [shopName, setShopName] = useState<string>('');
+  const [successSmsUrl, setSuccessSmsUrl] = useState<string | null>(null);
 
   // Verify user is authenticated
   useEffect(() => {
@@ -408,12 +411,8 @@ function NewInspectionForm() {
         const separator = isIOS ? '&' : '?';
         const smsUrl = `sms:${customerPhone}${separator}body=${encodeURIComponent(smsText)}`;
 
-        // Route to dashboard first, then open native SMS protocol
-        router.push('/dashboard');
-        
-        setTimeout(() => {
-          window.location.href = smsUrl;
-        }, 100);
+        setIsSubmitting(false);
+        setSuccessSmsUrl(smsUrl);
       }
     } catch (error: any) {
       console.error('Error submitting inspection:', error);
@@ -910,6 +909,55 @@ function NewInspectionForm() {
           }}
           isDark={isDark}
         />
+      )}
+
+      {/* Success Modal */}
+      {successSmsUrl && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className={`w-full max-w-sm rounded-3xl border p-6 text-center shadow-2xl transition-colors duration-200 ${
+            isDark ? 'bg-[#0f172a] border-gray-800 text-white' : 'bg-white border-gray-250 text-gray-900'
+          }`}>
+            <div className="mx-auto w-14 h-14 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center border border-emerald-500/20 mb-3 animate-[pulse_2s_infinite]">
+              <CheckCircle className="w-8 h-8" />
+            </div>
+            
+            <h3 className="text-lg font-black tracking-tight mb-1">Inspection Created!</h3>
+            <p className={`text-xs mb-6 px-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              The vehicle details and video have been successfully saved to the queue.
+            </p>
+
+            <div className="space-y-2.5">
+              <a
+                href={successSmsUrl}
+                onClick={() => {
+                  setTimeout(() => {
+                    setSuccessSmsUrl(null);
+                    router.push('/dashboard');
+                  }, 1000);
+                }}
+                className="w-full h-12 bg-blue-600 hover:bg-blue-750 text-white font-bold rounded-xl shadow-lg shadow-blue-500/15 flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-sm"
+              >
+                <Send className="w-4 h-4" />
+                <span>Send SMS to Customer</span>
+              </a>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  setSuccessSmsUrl(null);
+                  router.push('/dashboard');
+                }}
+                className={`w-full h-11 rounded-xl text-xs font-bold border transition-colors ${
+                  isDark 
+                    ? 'bg-gray-800/40 border-gray-700 text-gray-305 hover:text-white' 
+                    : 'bg-gray-50 border-gray-350 text-gray-705 hover:bg-gray-100 hover:text-gray-900 shadow-sm'
+                }`}
+              >
+                Go to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
