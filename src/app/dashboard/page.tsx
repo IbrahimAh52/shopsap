@@ -691,9 +691,9 @@ export default function MechanicDashboard() {
       <div className="fixed bottom-6 right-6 z-50">
         <Link 
           href="/dashboard/new"
-          className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-650 hover:from-blue-700 hover:to-indigo-700 text-white font-bold px-6 py-4 rounded-full shadow-2xl active:scale-95 transition-all text-base border border-blue-500/20"
+          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-750 text-white font-bold px-5 py-3.5 rounded-full shadow-xl hover:shadow-blue-500/20 active:scale-95 transition-all text-sm border border-blue-500/20"
         >
-          <Plus className="w-5 h-5 stroke-[3]" />
+          <Plus className="w-4 h-4 stroke-[3]" />
           <span>New Inspection</span>
         </Link>
       </div>
