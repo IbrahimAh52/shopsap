@@ -1169,26 +1169,39 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
 
           {item.status === 'SENT' && (
             <>
+              {/* Edit / Add Jobs Button */}
+              <Link
+                href={`/dashboard/new?id=${item.id}`}
+                className={`flex-1 h-9 rounded-lg text-[10px] font-extrabold flex items-center justify-center gap-1 border transition-all ${
+                  isDark 
+                    ? 'bg-gray-800 border-gray-700 text-gray-350 hover:bg-gray-750 hover:text-white' 
+                    : 'bg-gray-50 border-gray-305 text-gray-750 hover:bg-gray-100 hover:text-gray-900 shadow-xs'
+                }`}
+              >
+                <Wrench className="w-3 h-3 text-blue-500" />
+                <span>Edit Jobs</span>
+              </Link>
+
               {/* Resend/Copy Quote Link */}
               <button 
                 type="button"
                 onClick={() => onCopyLink(item.id)}
-                className={`flex-1 h-9 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
+                className={`flex-1 h-9 rounded-lg text-[10px] font-extrabold flex items-center justify-center gap-1 border transition-all ${
                   copiedId === item.id 
                     ? 'bg-emerald-600 border-emerald-500 text-white' 
                     : (isDark 
                         ? 'bg-gray-800/40 border-gray-700 text-gray-350 hover:bg-gray-800 hover:text-white' 
-                        : 'bg-gray-100 border-gray-250 text-gray-600 hover:bg-gray-200 hover:text-gray-900')
+                        : 'bg-gray-100 border-gray-250 text-gray-605 hover:bg-gray-200 hover:text-gray-900')
                 }`}
               >
                 {copiedId === item.id ? (
                   <>
-                    <Check className="w-3.5 h-3.5" />
+                    <Check className="w-3 h-3" />
                     <span>Copied!</span>
                   </>
                 ) : (
                   <>
-                    <Copy className="w-3.5 h-3.5" />
+                    <Copy className="w-3 h-3" />
                     <span>Copy Link</span>
                   </>
                 )}
@@ -1198,41 +1211,67 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
               <button
                 type="button"
                 onClick={() => onVerbalApproval(item.id)}
-                className={`flex-1 h-9 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
+                className={`flex-1 h-9 rounded-lg text-[10px] font-extrabold flex items-center justify-center gap-1 border transition-all ${
                   isDark 
                     ? 'bg-blue-600/10 border-blue-500/20 text-blue-400 hover:bg-blue-600/20' 
-                    : 'bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100'
+                    : 'bg-blue-50 border-blue-200 text-blue-650 hover:bg-blue-100'
                 }`}
               >
-                <UserCheck className="w-3.5 h-3.5" />
+                <UserCheck className="w-3 h-3" />
                 <span>Phone Auth</span>
               </button>
             </>
           )}
 
           {item.status === 'APPROVED' && (
-            <button
-              type="button"
-              onClick={() => onComplete(item.id)}
-              className="w-full h-9 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all flex items-center justify-center gap-1 border border-emerald-600/20"
-            >
-              <CheckCircle className="w-3.5 h-3.5" />
-              <span>Complete & Archive Repair</span>
-            </button>
+            <div className="flex items-center gap-2 w-full">
+              <Link
+                href={`/dashboard/new?id=${item.id}`}
+                className={`flex-1 h-9 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
+                  isDark 
+                    ? 'bg-gray-800 border-gray-700 text-gray-350 hover:bg-gray-750 hover:text-white' 
+                    : 'bg-gray-50 border-gray-305 text-gray-700 hover:bg-gray-105 hover:text-gray-900 shadow-xs'
+                }`}
+              >
+                <Wrench className="w-3.5 h-3.5 text-blue-500" />
+                <span>Edit Jobs</span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => onComplete(item.id)}
+                className="flex-1 h-9 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all flex items-center justify-center gap-1 border border-emerald-600/20 shadow-xs"
+              >
+                <CheckCircle className="w-3.5 h-3.5" />
+                <span>Complete Repair</span>
+              </button>
+            </div>
           )}
 
           {item.status === 'DECLINED' && (
-            <button
-              type="button"
-              onClick={() => onComplete(item.id)} // Clean it up as well
-              className={`w-full h-9 rounded-lg text-xs font-bold border transition-colors ${
-                isDark 
-                  ? 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-750 hover:text-white' 
-                  : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
-              }`}
-            >
-              <span>Archive / Clear Card</span>
-            </button>
+            <div className="flex items-center gap-2 w-full">
+              <Link
+                href={`/dashboard/new?id=${item.id}`}
+                className={`flex-1 h-9 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
+                  isDark 
+                    ? 'bg-gray-800 border-gray-700 text-gray-350 hover:bg-gray-750 hover:text-white' 
+                    : 'bg-gray-50 border-gray-305 text-gray-700 hover:bg-gray-105 hover:text-gray-900 shadow-xs'
+                }`}
+              >
+                <Wrench className="w-3.5 h-3.5 text-blue-500" />
+                <span>Edit Jobs</span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => onComplete(item.id)} // Clean it up as well
+                className={`flex-1 h-9 rounded-lg text-xs font-bold border transition-colors ${
+                  isDark 
+                    ? 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-750 hover:text-white' 
+                    : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+                }`}
+              >
+                <span>Clear Card</span>
+              </button>
+            </div>
           )}
 
           {item.status === 'AWAITING_INSPECTION' && (

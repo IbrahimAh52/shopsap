@@ -116,6 +116,7 @@ function NewInspectionForm() {
   const [shopName, setShopName] = useState<string>('');
   const [province, setProvince] = useState<string>('');
   const [successSmsUrl, setSuccessSmsUrl] = useState<string | null>(null);
+  const [existingVideoUrl, setExistingVideoUrl] = useState<string>('');
 
   // Verify user is authenticated
   useEffect(() => {
@@ -191,6 +192,10 @@ function NewInspectionForm() {
             setProvince(data.province);
           } else if (typeof window !== 'undefined') {
             setProvince(localStorage.getItem('shopsnap_shop_province') || 'AB');
+          }
+          if (data.videoUrl) {
+            setExistingVideoUrl(data.videoUrl);
+            setVideoPreviewUrl(data.videoUrl);
           }
           
           if (CAR_MAKES_AND_MODELS[data.vehicleMake]) {
@@ -271,9 +276,12 @@ function NewInspectionForm() {
   const removeVideo = () => {
     setVideoBlob(null);
     if (videoPreviewUrl) {
-      URL.revokeObjectURL(videoPreviewUrl);
+      if (!videoPreviewUrl.startsWith('http')) {
+        URL.revokeObjectURL(videoPreviewUrl);
+      }
       setVideoPreviewUrl(null);
     }
+    setExistingVideoUrl('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -315,6 +323,50 @@ function NewInspectionForm() {
 
     try {
       if (!videoBlob) {
+        if (existingVideoUrl) {
+          // If editing a record that already has a video, save & update status to SENT (or keep SENT)
+          if (isEditing) {
+            await db.update(inspectionId, {
+              ...metadata,
+              status: 'SENT',
+              videoUrl: existingVideoUrl,
+            });
+            await fetch('/api/inspections', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: inspectionId,
+                status: 'SENT',
+                videoUrl: existingVideoUrl,
+                ...metadata,
+              }),
+            });
+          }
+          
+          const quoteUrl = `${window.location.origin}/quote/${inspectionId}`;
+          const jobsSummary = lineItems.length > 1 
+            ? `${lineItems[0].name} & ${lineItems.length - 1} other jobs` 
+            : lineItems[0].name;
+            
+          const smsText = `${metadata.shopName || 'ShopSnap'}: ${metadata.vehicleMake} ${metadata.vehicleModel} checkup. Required service: ${jobsSummary}. Estimate: $${costNum.toFixed(2)}. Review details & approve here: ${quoteUrl}`;
+          
+          localStorage.setItem('shopsnap_sms_log', JSON.stringify({
+            id: inspectionId,
+            phone: customerPhone,
+            text: smsText
+          }));
+
+          // Native SMS URI
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+          const separator = isIOS ? '&' : '?';
+          const smsUrl = `sms:${customerPhone}${separator}body=${encodeURIComponent(smsText)}`;
+
+          setIsSubmitting(false);
+          setSuccessSmsUrl(smsUrl);
+          return;
+        }
+
         // Queue without a video -> AWAITING_INSPECTION
         if (isEditing) {
           await db.update(inspectionId, {
@@ -953,12 +1005,12 @@ function NewInspectionForm() {
             {isSubmitting ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span>{videoBlob ? 'Generating & Sending...' : 'Saving to Queue...'}</span>
+                <span>{videoBlob ? 'Generating & Sending...' : (existingVideoUrl ? 'Updating...' : 'Saving to Queue...')}</span>
               </>
             ) : (
               <>
                 <Check className="w-5 h-5" />
-                <span>{videoBlob ? 'Generate & Send Text' : 'Add to Queue (Awaiting Inspection)'}</span>
+                <span>{(videoBlob || existingVideoUrl) ? 'Update & Send Text' : 'Add to Queue (Awaiting Inspection)'}</span>
               </>
             )}
           </button>
