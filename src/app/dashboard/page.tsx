@@ -480,7 +480,7 @@ export default function MechanicDashboard() {
               className={`flex-1 md:flex-initial px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${
                 activeTab === 'active'
                   ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-gray-405 hover:text-gray-200 dark:hover:text-white'
+                  : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
               }`}
             >
               Active Board ({awaitingInspection.length + sentToCustomer.length + approvedReady.length + declined.length})
@@ -490,14 +490,14 @@ export default function MechanicDashboard() {
               className={`flex-1 md:flex-initial px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${
                 activeTab === 'archived'
                   ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-gray-405 hover:text-gray-200 dark:hover:text-white'
+                  : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
               }`}
             >
               Archived History ({archived.length})
             </button>
           </div>          {/* Advisor Filter Dropdown */}
           <div className="flex items-center gap-2 w-full md:w-auto">
-            <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-gray-500' : 'text-gray-450'}`}>
+            <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-550'}`}>
               Advisor:
             </span>
             <select
@@ -505,8 +505,8 @@ export default function MechanicDashboard() {
               onChange={(e) => setAdvisorFilter(e.target.value)}
               className={`h-10 px-3 text-xs font-bold rounded-xl border focus:border-blue-500 focus:outline-none transition-colors w-full md:w-44 ${
                 isDark 
-                  ? 'bg-gray-955 border-gray-850 text-gray-305' 
-                  : 'bg-gray-50 border-gray-300 text-gray-700'
+                  ? 'bg-slate-900 border-gray-800 text-gray-200' 
+                  : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400 shadow-sm'
               }`}
             >
               <option value="all">All Advisors</option>
