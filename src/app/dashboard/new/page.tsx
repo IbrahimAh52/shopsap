@@ -18,7 +18,9 @@ import {
   Sparkles,
   AlertCircle,
   CheckCircle,
-  Send
+  Send,
+  FileText,
+  Wrench
 } from 'lucide-react';
 import { db, isSupabaseConfigured, generateUUID, LineItem } from '@/lib/db';
 import { offlineQueue } from '@/lib/offline-queue';
@@ -284,7 +286,7 @@ function NewInspectionForm() {
     setExistingVideoUrl('');
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, actionType: 'draft' | 'send' = 'send') => {
     e.preventDefault();
     const hasValidLineItems = lineItems.length > 0 && lineItems.every(item => item.name.trim() && item.cost >= 0);
     if (!vehicleMake || !vehicleModel || !customerPhone || !hasValidLineItems) {
@@ -302,8 +304,8 @@ function NewInspectionForm() {
 
     const inspectionId = editId || generateUUID();
     const isEditing = !!editId;
-
     const finalShopName = shopName || 'ShopSnap';
+    const targetStatus: 'AWAITING_INSPECTION' | 'SENT' = actionType === 'draft' ? 'AWAITING_INSPECTION' : 'SENT';
 
     const metadata = {
       vehicleYear: parseInt(vehicleYear) || new Date().getFullYear(),
@@ -322,165 +324,85 @@ function NewInspectionForm() {
     };
 
     try {
-      if (!videoBlob) {
-        if (existingVideoUrl) {
-          // If editing a record that already has a video, save & update status to SENT (or keep SENT)
+      let finalVideoUrl = existingVideoUrl || '';
+
+      // 1. Handle video upload if a new video file was captured/chosen
+      if (videoBlob) {
+        if (!isOnline) {
+          // If offline, add to IndexedDB queue
+          await offlineQueue.add({
+            id: inspectionId,
+            inspectionId,
+            fileBlob: videoBlob,
+            fileName: `video-${inspectionId}.mp4`,
+            metadata: {
+              ...metadata,
+              status: targetStatus,
+            } as any,
+          });
+          
           if (isEditing) {
             await db.update(inspectionId, {
               ...metadata,
-              status: 'SENT',
-              videoUrl: existingVideoUrl,
+              status: 'AWAITING_INSPECTION', // keep locally queued
             });
-            await fetch('/api/inspections', {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                id: inspectionId,
-                status: 'SENT',
-                videoUrl: existingVideoUrl,
-                ...metadata,
-              }),
-            });
-          }
-          
-          const quoteUrl = `${window.location.origin}/quote/${inspectionId}`;
-          const jobsSummary = lineItems.length > 1 
-            ? `${lineItems[0].name} & ${lineItems.length - 1} other jobs` 
-            : lineItems[0].name;
-            
-          const smsText = `${metadata.shopName || 'ShopSnap'}: ${metadata.vehicleMake} ${metadata.vehicleModel} checkup. Required service: ${jobsSummary}. Estimate: $${costNum.toFixed(2)}. Review details & approve here: ${quoteUrl}`;
-          
-          localStorage.setItem('shopsnap_sms_log', JSON.stringify({
-            id: inspectionId,
-            phone: customerPhone,
-            text: smsText
-          }));
-
-          // Native SMS URI
-          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-          const separator = isIOS ? '&' : '?';
-          const smsUrl = `sms:${customerPhone}${separator}body=${encodeURIComponent(smsText)}`;
-
-          setIsSubmitting(false);
-          setSuccessSmsUrl(smsUrl);
-          return;
-        }
-
-        // Queue without a video -> AWAITING_INSPECTION
-        if (isEditing) {
-          await db.update(inspectionId, {
-            ...metadata,
-            status: 'AWAITING_INSPECTION',
-          });
-          await fetch('/api/inspections', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              id: inspectionId,
-              status: 'AWAITING_INSPECTION',
-              ...metadata,
-            }),
-          });
-        } else {
-          await db.create({
-            id: inspectionId,
-            ...metadata,
-            status: 'AWAITING_INSPECTION',
-            videoUrl: '',
-          });
-          await fetch('/api/inspections', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+          } else {
+            await db.create({
               id: inspectionId,
               ...metadata,
               status: 'AWAITING_INSPECTION',
               videoUrl: '',
-            }),
+            });
+          }
+          
+          window.dispatchEvent(new Event('storage_updated'));
+          alert('You are offline! Video upload queued. It will sync automatically when online.');
+          router.push('/dashboard');
+          return;
+        } else {
+          // If online, upload video
+          const formData = new FormData();
+          formData.append('file', videoBlob, `video-${inspectionId}.mp4`);
+          formData.append('inspectionId', inspectionId);
+
+          const uploadRes = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
           });
+
+          if (!uploadRes.ok) throw new Error('Video upload failed');
+          const uploadData = await uploadRes.json();
+          finalVideoUrl = uploadData.url;
         }
-        window.dispatchEvent(new Event('storage_updated'));
-        router.push('/dashboard');
-        return;
       }
 
-      // If video IS present, upload and send
-      if (!isOnline) {
-        await offlineQueue.add({
-          id: inspectionId,
-          inspectionId,
-          fileBlob: videoBlob,
-          fileName: `video-${inspectionId}.mp4`,
-          metadata,
+      // 2. Save/Update record in database
+      const payload = {
+        ...metadata,
+        status: targetStatus,
+        videoUrl: finalVideoUrl,
+      };
+
+      if (isEditing) {
+        await db.update(inspectionId, payload);
+        await fetch('/api/inspections', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: inspectionId, ...payload }),
         });
-
-        if (isEditing) {
-          await db.update(inspectionId, {
-            ...metadata,
-            status: 'AWAITING_INSPECTION',
-          });
-        } else {
-          await db.create({
-            id: inspectionId,
-            ...metadata,
-            status: 'AWAITING_INSPECTION',
-            videoUrl: '',
-          });
-        }
-
-        window.dispatchEvent(new Event('storage_updated'));
-        alert('You are offline! Inspection queued locally. It will upload automatically once connection is restored.');
-        router.push('/dashboard');
       } else {
-        const formData = new FormData();
-        formData.append('file', videoBlob, `video-${inspectionId}.mp4`);
-        formData.append('inspectionId', inspectionId);
-
-        const uploadRes = await fetch('/api/upload', {
+        await db.create({ id: inspectionId, ...payload });
+        await fetch('/api/inspections', {
           method: 'POST',
-          body: formData,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: inspectionId, ...payload }),
         });
+      }
 
-        if (!uploadRes.ok) throw new Error('Video upload failed');
-        const uploadData = await uploadRes.json();
-        const videoUrl = uploadData.url;
+      window.dispatchEvent(new Event('storage_updated'));
 
-        if (isEditing) {
-          await db.update(inspectionId, {
-            ...metadata,
-            status: 'SENT',
-            videoUrl,
-          });
-          await fetch('/api/inspections', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              id: inspectionId,
-              status: 'SENT',
-              videoUrl,
-              ...metadata,
-            }),
-          });
-        } else {
-          await db.create({
-            id: inspectionId,
-            ...metadata,
-            status: 'SENT',
-            videoUrl,
-          });
-          await fetch('/api/inspections', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              id: inspectionId,
-              ...metadata,
-              status: 'SENT',
-              videoUrl,
-            }),
-          });
-        }
-
+      // 3. Dispatch SMS if action is "send"
+      if (targetStatus === 'SENT') {
         const quoteUrl = `${window.location.origin}/quote/${inspectionId}`;
         const jobsSummary = lineItems.length > 1 
           ? `${lineItems[0].name} & ${lineItems.length - 1} other jobs` 
@@ -488,14 +410,13 @@ function NewInspectionForm() {
           
         const smsText = `${metadata.shopName || 'ShopSnap'}: ${metadata.vehicleMake} ${metadata.vehicleModel} checkup. Required service: ${jobsSummary}. Estimate: $${costNum.toFixed(2)}. Review details & approve here: ${quoteUrl}`;
         
-        // Save locally for dashboard simulated toast overlay fallback
         localStorage.setItem('shopsnap_sms_log', JSON.stringify({
           id: inspectionId,
           phone: customerPhone,
           text: smsText
         }));
 
-        // Format native SMS URI scheme (handles iOS Safari vs Android formatting differences)
+        // Format native SMS URI
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
                       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
         const separator = isIOS ? '&' : '?';
@@ -503,11 +424,14 @@ function NewInspectionForm() {
 
         setIsSubmitting(false);
         setSuccessSmsUrl(smsUrl);
+      } else {
+        // If draft, redirect straight to dashboard
+        setIsSubmitting(false);
+        router.push('/dashboard');
       }
     } catch (error: any) {
       console.error('Error submitting inspection:', error);
-      alert('Error creating inspection: ' + error.message);
-    } finally {
+      alert('Error saving inspection: ' + error.message);
       setIsSubmitting(false);
     }
   };
@@ -985,24 +909,42 @@ function NewInspectionForm() {
 
           </div>
 
-          {/* Action Submission Button */}
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-750 text-white font-bold transition-all active:scale-[0.99] flex items-center justify-center gap-2 border border-blue-500/20 shadow-lg shadow-blue-500/10 text-base"
-          >
-            {isSubmitting ? (
-              <>
+          {/* Action Submission Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3 mt-2">
+            {/* Save Draft Button */}
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={(e) => handleSubmit(e, 'draft')}
+              className={`flex-1 h-14 rounded-2xl font-bold transition-all active:scale-[0.99] flex items-center justify-center gap-2 border text-base shadow-sm ${
+                isDark 
+                  ? 'bg-gray-800 hover:bg-gray-750 border-gray-700 text-gray-300' 
+                  : 'bg-gray-50 hover:bg-gray-100 border-gray-300 text-gray-700'
+              }`}
+            >
+              {isSubmitting ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span>{videoBlob ? 'Generating & Sending...' : (existingVideoUrl ? 'Updating...' : 'Saving to Queue...')}</span>
-              </>
-            ) : (
-              <>
-                <Check className="w-5 h-5" />
-                <span>{(videoBlob || existingVideoUrl) ? 'Update & Send Text' : 'Add to Queue (Awaiting Inspection)'}</span>
-              </>
-            )}
-          </button>
+              ) : (
+                <FileText className="w-5 h-5 text-gray-550" />
+              )}
+              <span>Save Draft (Queue)</span>
+            </button>
+
+            {/* Send to Customer Button */}
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={(e) => handleSubmit(e, 'send')}
+              className="flex-[1.5] h-14 rounded-2xl bg-blue-600 hover:bg-blue-750 text-white font-bold transition-all active:scale-[0.99] flex items-center justify-center gap-2 border border-blue-500/20 shadow-lg shadow-blue-500/10 text-base"
+            >
+              {isSubmitting ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Send className="w-5 h-5" />
+              )}
+              <span>Send Quote to Customer</span>
+            </button>
+          </div>
         </form>
       </main>
 

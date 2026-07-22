@@ -315,6 +315,60 @@ export default function MechanicDashboard() {
     }
   };
 
+  // Action: Direct Send Quote from Queue Card
+  const handleSendQuoteDirect = async (item: Inspection) => {
+    try {
+      const now = new Date().toISOString();
+      const updated = {
+        ...item,
+        status: 'SENT' as const,
+        updatedAt: now,
+      };
+      
+      await db.update(item.id, { status: 'SENT' });
+      await fetch('/api/inspections', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: item.id, status: 'SENT' }),
+      });
+
+      // Generate SMS Text
+      const costNum = item.items?.reduce((sum, i) => sum + (i.cost || 0), 0) || item.estimatedCost;
+      const jobsSummary = item.items && item.items.length > 1
+        ? `${item.items[0].name} & ${item.items.length - 1} other jobs`
+        : (item.repairName || 'General Repair');
+        
+      const quoteUrl = `${window.location.origin}/quote/${item.id}`;
+      const smsText = `${item.shopName || 'ShopSnap'}: ${item.vehicleMake} ${item.vehicleModel} checkup. Required service: ${jobsSummary}. Estimate: $${costNum.toFixed(2)}. Review details & approve here: ${quoteUrl}`;
+
+      localStorage.setItem('shopsnap_sms_log', JSON.stringify({
+        id: item.id,
+        phone: item.customerPhone,
+        text: smsText
+      }));
+
+      // Set SMS mock banner state so they can preview it
+      setLastSmsMessage({
+        id: item.id,
+        phone: item.customerPhone,
+        text: smsText
+      });
+
+      // Launch native SMS
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const separator = isIOS ? '&' : '?';
+      const smsUrl = `sms:${item.customerPhone}${separator}body=${encodeURIComponent(smsText)}`;
+      window.location.href = smsUrl;
+
+      // Reload list
+      loadData();
+    } catch (err: any) {
+      console.error('Error sending quote direct:', err);
+      alert('Error sending quote: ' + err.message);
+    }
+  };
+
   // Harvest list of advisors dynamically from current inspections
   const availableAdvisors = Array.from(new Set(inspections.map(i => i.advisorName).filter(Boolean))) as string[];
 
@@ -663,6 +717,7 @@ export default function MechanicDashboard() {
                       copiedId={copiedId}
                       onVerbalApproval={setVerbalApprovalId}
                       onComplete={handleCompleteWork}
+                      onSendQuoteDirect={handleSendQuoteDirect}
                     />
                   ))}
                 </div>
@@ -690,6 +745,7 @@ export default function MechanicDashboard() {
                       copiedId={copiedId}
                       onVerbalApproval={setVerbalApprovalId}
                       onComplete={handleCompleteWork}
+                      onSendQuoteDirect={handleSendQuoteDirect}
                     />
                   ))}
                 </div>
@@ -717,6 +773,7 @@ export default function MechanicDashboard() {
                       copiedId={copiedId}
                       onVerbalApproval={setVerbalApprovalId}
                       onComplete={handleCompleteWork}
+                      onSendQuoteDirect={handleSendQuoteDirect}
                     />
                   ))}
                 </div>
@@ -744,6 +801,7 @@ export default function MechanicDashboard() {
                       copiedId={copiedId}
                       onVerbalApproval={setVerbalApprovalId}
                       onComplete={handleCompleteWork}
+                      onSendQuoteDirect={handleSendQuoteDirect}
                     />
                   ))}
                 </div>
@@ -1025,9 +1083,10 @@ interface InspectionCardProps {
   copiedId: string | null;
   onVerbalApproval: (id: string) => void;
   onComplete: (id: string) => void;
+  onSendQuoteDirect?: (item: Inspection) => void;
 }
 
-function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, onComplete }: InspectionCardProps) {
+function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, onComplete, onSendQuoteDirect }: InspectionCardProps) {
   const urgencyColor = {
     URGENT: isDark ? 'bg-red-505/10 text-red-400 border-red-900/30' : 'bg-red-50 text-red-650 border-red-100',
     RECOMMENDED: isDark ? 'bg-amber-505/10 text-amber-400 border-amber-900/30' : 'bg-amber-50 text-amber-650 border-amber-100',
@@ -1158,13 +1217,29 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
         {/* Dashboard Actions Context */}
         <div className="flex items-center gap-2 mt-1">
           {item.status === 'AWAITING_INSPECTION' && (
-            <Link
-              href={`/dashboard/new?id=${item.id}`}
-              className="w-full h-9 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all flex items-center justify-center gap-1.5 border border-blue-500/20"
-            >
-              <Camera className="w-3.5 h-3.5" />
-              <span>Record & Send Video</span>
-            </Link>
+            <div className="flex items-center gap-2 w-full">
+              <Link
+                href={`/dashboard/new?id=${item.id}`}
+                className={`flex-1 h-9 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
+                  isDark 
+                    ? 'bg-gray-800 border-gray-700 text-gray-350 hover:bg-gray-750 hover:text-white' 
+                    : 'bg-gray-50 border-gray-250 text-gray-700 hover:bg-gray-105 hover:text-gray-900 shadow-xs'
+                }`}
+              >
+                <Camera className="w-3.5 h-3.5 text-blue-500" />
+                <span>{item.videoUrl ? 'Edit Jobs' : 'Diagnose & Record'}</span>
+              </Link>
+              {item.videoUrl && onSendQuoteDirect && (
+                <button
+                  type="button"
+                  onClick={() => onSendQuoteDirect(item)}
+                  className="flex-1 h-9 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-705 text-white transition-all flex items-center justify-center gap-1.5 border border-blue-500/20 shadow-xs animate-pulse"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Send Quote</span>
+                </button>
+              )}
+            </div>
           )}
 
           {item.status === 'SENT' && (
