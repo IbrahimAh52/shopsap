@@ -28,7 +28,8 @@ import {
   Loader2,
   Settings,
   ChevronDown,
-  Archive
+  Archive,
+  Trash2
 } from 'lucide-react';
 import { db, Inspection, isSupabaseConfigured } from '@/lib/db';
 import { offlineQueue } from '@/lib/offline-queue';
@@ -413,6 +414,22 @@ export default function MechanicDashboard() {
     const separator = isIOS ? '&' : '?';
     const smsUrl = `sms:${item.customerPhone}${separator}body=${encodeURIComponent(smsText)}`;
     window.location.href = smsUrl;
+  };
+
+  // Action: Delete inspection permanently
+  const handleDeleteInspection = async (id: string) => {
+    const confirmDel = confirm('Are you sure you want to permanently delete this archived job? This action cannot be undone.');
+    if (!confirmDel) return;
+
+    try {
+      await db.delete(id);
+      await fetch(`/api/inspections?id=${id}`, { method: 'DELETE' });
+      loadData();
+      window.dispatchEvent(new Event('storage_updated'));
+    } catch (err: any) {
+      console.error('Failed to delete inspection:', err);
+      alert('Failed to delete job: ' + (err.message || err));
+    }
   };
 
   // Harvest list of advisors dynamically from current inspections
@@ -894,6 +911,7 @@ export default function MechanicDashboard() {
                     isDark={isDark} 
                     formatCost={formatCost}
                     onResendSms={handleResendSms}
+                    onDelete={handleDeleteInspection}
                   />
                 ))}
               </div>
@@ -1438,9 +1456,10 @@ interface ArchivedCardProps {
   isDark: boolean;
   formatCost: (val: number) => string;
   onResendSms?: (item: Inspection) => void;
+  onDelete?: (id: string) => void;
 }
 
-function ArchivedCard({ item, isDark, formatCost, onResendSms }: ArchivedCardProps) {
+function ArchivedCard({ item, isDark, formatCost, onResendSms, onDelete }: ArchivedCardProps) {
   const formattedDate = new Date(item.updatedAt || item.createdAt).toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
@@ -1559,6 +1578,21 @@ function ArchivedCard({ item, isDark, formatCost, onResendSms }: ArchivedCardPro
             >
               <Send className="w-3 h-3" />
               <span>Resend Text</span>
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              onClick={() => onDelete(item.id)}
+              className={`h-8 px-2.5 rounded-lg text-[10px] font-bold border transition-colors flex items-center justify-center gap-1 ${
+                isDark 
+                  ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20' 
+                  : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
+              }`}
+              title="Delete archived job"
+            >
+              <Trash2 className="w-3 h-3" />
+              <span>Delete</span>
             </button>
           )}
         </div>

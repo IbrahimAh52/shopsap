@@ -496,5 +496,18 @@ export const db = {
     currentMockList[index] = updatedRecord;
     saveMockData(currentMockList);
     return decodeInspection(updatedRecord);
+  },
+
+  async delete(id: string): Promise<void> {
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase
+        .from('inspections')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    }
+
+    const currentMockList = getMockData().filter(i => i.id !== id);
+    saveMockData(currentMockList);
   }
 };
