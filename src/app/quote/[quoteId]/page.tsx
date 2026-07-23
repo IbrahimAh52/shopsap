@@ -188,6 +188,19 @@ export default function CustomerQuotePortal() {
     window.location.href = smsUrl;
   };
 
+  const handleCloseReceipt = (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      window.close();
+    } catch (err) {
+      // fallthrough
+    }
+
+    setTimeout(() => {
+      window.location.href = '/dashboard';
+    }, 150);
+  };
+
   return (
     <div className="flex flex-col flex-1 min-h-screen bg-gray-50 text-gray-900 font-sans antialiased selection:bg-blue-100">
       
@@ -199,14 +212,15 @@ export default function CustomerQuotePortal() {
       {/* Brand Shop Header */}
       <header className="px-4 py-3 bg-white border-b border-gray-200/80 flex items-center justify-between shadow-xs sticky top-0 z-40">
         <div className="flex items-center gap-2">
-          <Link 
-            href="/dashboard" 
+          <button 
+            type="button"
+            onClick={handleCloseReceipt}
             className="px-2.5 py-1.5 rounded-lg border border-gray-250 bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-1 text-xs font-bold shadow-2xs"
-            title="Back to Dashboard"
+            title="Close Receipt"
           >
             <ArrowLeft className="w-3.5 h-3.5 text-gray-600" />
             <span>Dashboard</span>
-          </Link>
+          </button>
           <div className="h-4 w-px bg-gray-200 mx-1 hidden sm:block" />
           <div className="hidden sm:flex items-center gap-2">
             <div className="relative w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-650 flex items-center justify-center text-white shadow-xs">
@@ -227,14 +241,15 @@ export default function CustomerQuotePortal() {
             <Send className="w-3.5 h-3.5" />
             <span>Resend Receipt</span>
           </button>
-          <Link
-            href="/dashboard"
+          <button
+            type="button"
+            onClick={handleCloseReceipt}
             className="px-3 py-1.5 rounded-lg border border-gray-300 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs"
-            title="Close out receipt view"
+            title="Close tab"
           >
             <X className="w-3.5 h-3.5 text-gray-600" />
             <span>Close Receipt</span>
-          </Link>
+          </button>
         </div>
       </header>
 
