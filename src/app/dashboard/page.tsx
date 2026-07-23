@@ -703,27 +703,53 @@ export default function MechanicDashboard() {
           <section className="space-y-6">
             
             {/* Mobile Lane Sub-Tabs Selector */}
-            <div className="flex md:hidden items-center gap-1.5 p-1 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 mb-4 overflow-x-auto select-none no-scrollbar shadow-xs">
+            <div className="flex md:hidden items-center gap-1.5 p-1.5 bg-white rounded-2xl border border-gray-200 mb-4 overflow-x-auto select-none no-scrollbar shadow-xs">
               {[
-                { id: 'awaiting', label: 'Awaiting', count: awaitingInspection.length, dotColor: 'bg-amber-500' },
-                { id: 'sent', label: 'Sent', count: sentToCustomer.length, dotColor: 'bg-blue-500' },
-                { id: 'approved', label: 'Approved', count: approvedReady.length, dotColor: 'bg-emerald-500' },
-                { id: 'declined', label: 'Declined', count: declined.length, dotColor: 'bg-red-500' }
+                { 
+                  id: 'awaiting', 
+                  label: 'Awaiting', 
+                  count: awaitingInspection.length, 
+                  dotColor: 'bg-amber-500',
+                  activeClass: 'bg-amber-600 text-white border-amber-600 shadow-xs',
+                  inactiveClass: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                },
+                { 
+                  id: 'sent', 
+                  label: 'Sent', 
+                  count: sentToCustomer.length, 
+                  dotColor: 'bg-blue-500',
+                  activeClass: 'bg-blue-600 text-white border-blue-600 shadow-xs',
+                  inactiveClass: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                },
+                { 
+                  id: 'approved', 
+                  label: 'Approved', 
+                  count: approvedReady.length, 
+                  dotColor: 'bg-emerald-500',
+                  activeClass: 'bg-emerald-600 text-white border-emerald-600 shadow-xs',
+                  inactiveClass: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                },
+                { 
+                  id: 'declined', 
+                  label: 'Declined', 
+                  count: declined.length, 
+                  dotColor: 'bg-red-500',
+                  activeClass: 'bg-red-600 text-white border-red-600 shadow-xs',
+                  inactiveClass: 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+                }
               ].map((lane) => (
                 <button
                   key={lane.id}
                   type="button"
                   onClick={() => setActiveMobileLane(lane.id as any)}
-                  className={`flex-1 min-w-[80px] py-2 px-2.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 border ${
-                    activeMobileLane === lane.id
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                      : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border-gray-200 dark:border-gray-800'
+                  className={`flex-1 min-w-[85px] py-2 px-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 border ${
+                    activeMobileLane === lane.id ? lane.activeClass : lane.inactiveClass
                   }`}
                 >
-                  <span className={`w-2 h-2 rounded-full ${lane.dotColor}`} />
+                  <span className={`w-2 h-2 rounded-full ${activeMobileLane === lane.id ? 'bg-white' : lane.dotColor}`} />
                   <span>{lane.label}</span>
                   <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-mono ${
-                    activeMobileLane === lane.id ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'
+                    activeMobileLane === lane.id ? 'bg-white/20 text-white' : 'bg-white/80 border border-current/20'
                   }`}>
                     {lane.count}
                   </span>
