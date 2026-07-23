@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import Link from 'next/link';
 import { 
   ShieldCheck, 
   Car, 
@@ -10,10 +9,7 @@ import {
   CheckCircle, 
   AlertTriangle, 
   MessageSquare,
-  Lock,
-  ArrowLeft,
-  Send,
-  X
+  Lock
 } from 'lucide-react';
 import { db, Inspection } from '@/lib/db';
 
@@ -172,35 +168,6 @@ export default function CustomerQuotePortal() {
   const taxAmount = subtotal * taxInfo.rate;
   const totalAmount = subtotal + taxAmount;
 
-  const handleResendSms = () => {
-    if (!inspection) return;
-    const subtotalCost = inspection.items?.reduce((sum, i) => sum + (i.cost || 0), 0) || inspection.estimatedCost || 0;
-    const totalWithTax = subtotalCost * (1 + taxInfo.rate);
-      
-    const receiptUrl = window.location.href;
-    const vehicleStr = [inspection.vehicleYear, inspection.vehicleMake, inspection.vehicleModel].filter(Boolean).join(' ');
-    const smsText = `${inspection.shopName || 'ShopSnap'}: ${vehicleStr} Receipt. Total: $${totalWithTax.toFixed(2)}. View your completed receipt here: ${receiptUrl}`;
-
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const separator = isIOS ? '&' : '?';
-    const smsUrl = `sms:${inspection.customerPhone}${separator}body=${encodeURIComponent(smsText)}`;
-    window.location.href = smsUrl;
-  };
-
-  const handleCloseReceipt = (e: React.MouseEvent) => {
-    e.preventDefault();
-    try {
-      window.close();
-    } catch (err) {
-      // fallthrough
-    }
-
-    setTimeout(() => {
-      window.location.href = '/dashboard';
-    }, 150);
-  };
-
   return (
     <div className="flex flex-col flex-1 min-h-screen bg-gray-50 text-gray-900 font-sans antialiased selection:bg-blue-100">
       
@@ -212,44 +179,17 @@ export default function CustomerQuotePortal() {
       {/* Brand Shop Header */}
       <header className="px-4 py-3 bg-white border-b border-gray-200/80 flex items-center justify-between shadow-xs sticky top-0 z-40">
         <div className="flex items-center gap-2">
-          <button 
-            type="button"
-            onClick={handleCloseReceipt}
-            className="px-2.5 py-1.5 rounded-lg border border-gray-250 bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-1 text-xs font-bold shadow-2xs"
-            title="Close Receipt"
-          >
-            <ArrowLeft className="w-3.5 h-3.5 text-gray-600" />
-            <span>Dashboard</span>
-          </button>
-          <div className="h-4 w-px bg-gray-200 mx-1 hidden sm:block" />
-          <div className="hidden sm:flex items-center gap-2">
-            <div className="relative w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-650 flex items-center justify-center text-white shadow-xs">
-              <Wrench className="w-4 h-4" />
-            </div>
-            <span className="text-base font-bold tracking-tight text-gray-900">
-              {inspection.shopName || 'ShopSnap'}
-            </span>
+          <div className="relative w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-650 flex items-center justify-center text-white shadow-xs">
+            <Wrench className="w-4 h-4" />
           </div>
+          <span className="text-base font-bold tracking-tight text-gray-900">
+            {inspection.shopName || 'ShopSnap'}
+          </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleResendSms}
-            className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors"
-          >
-            <Send className="w-3.5 h-3.5" />
-            <span>Resend Receipt</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleCloseReceipt}
-            className="px-3 py-1.5 rounded-lg border border-gray-300 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs"
-            title="Close tab"
-          >
-            <X className="w-3.5 h-3.5 text-gray-600" />
-            <span>Close Receipt</span>
-          </button>
+        <div className="flex items-center gap-1.5 text-[11px] font-bold text-gray-600 bg-gray-100 border border-gray-200 px-2.5 py-1 rounded-full">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+          <span>Verified Shop</span>
         </div>
       </header>
 
