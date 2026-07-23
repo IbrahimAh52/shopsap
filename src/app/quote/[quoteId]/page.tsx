@@ -12,7 +12,8 @@ import {
   MessageSquare,
   Lock,
   ArrowLeft,
-  Send
+  Send,
+  X
 } from 'lucide-react';
 import { db, Inspection } from '@/lib/db';
 
@@ -226,8 +227,16 @@ export default function CustomerQuotePortal() {
             className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors"
           >
             <Send className="w-3.5 h-3.5" />
-            <span>Resend Text</span>
+            <span>Resend Link</span>
           </button>
+          <Link
+            href="/dashboard"
+            className="px-3 py-1.5 rounded-lg border border-gray-300 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs"
+            title="Close out receipt view"
+          >
+            <X className="w-3.5 h-3.5 text-gray-600" />
+            <span>Close Receipt</span>
+          </Link>
         </div>
       </header>
 

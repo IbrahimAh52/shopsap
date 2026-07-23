@@ -1278,11 +1278,11 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
           )}
 
           {item.status === 'SENT' && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full">
+            <>
               {/* Edit / Add Jobs Button */}
               <Link
                 href={`/dashboard/new?id=${item.id}`}
-                className={`h-9 rounded-lg text-[10px] font-extrabold flex items-center justify-center gap-1 border transition-all ${
+                className={`flex-1 h-9 rounded-lg text-[10px] font-extrabold flex items-center justify-center gap-1 border transition-all ${
                   isDark 
                     ? 'bg-gray-800 border-gray-700 text-gray-350 hover:bg-gray-750 hover:text-white' 
                     : 'bg-gray-50 border-gray-305 text-gray-750 hover:bg-gray-100 hover:text-gray-900 shadow-xs'
@@ -1292,21 +1292,11 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
                 <span>Edit Jobs</span>
               </Link>
 
-              {/* Resend Text */}
-              <button 
-                type="button"
-                onClick={() => onResendSms ? onResendSms(item) : onCopyLink(item.id)}
-                className="h-9 rounded-lg text-[10px] font-extrabold flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-xs"
-              >
-                <Send className="w-3 h-3" />
-                <span>Resend Text</span>
-              </button>
-
-              {/* Copy Quote Link */}
+              {/* Resend/Copy Quote Link */}
               <button 
                 type="button"
                 onClick={() => onCopyLink(item.id)}
-                className={`h-9 rounded-lg text-[10px] font-extrabold flex items-center justify-center gap-1 border transition-all ${
+                className={`flex-1 h-9 rounded-lg text-[10px] font-extrabold flex items-center justify-center gap-1 border transition-all ${
                   copiedId === item.id 
                     ? 'bg-emerald-600 border-emerald-500 text-white' 
                     : (isDark 
@@ -1327,20 +1317,20 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
                 )}
               </button>
 
-              {/* Close Out Receipt */}
+              {/* Log Verbal Phone Approval */}
               <button
                 type="button"
-                onClick={() => onComplete(item.id)}
-                className={`h-9 rounded-lg text-[10px] font-extrabold flex items-center justify-center gap-1 border transition-all ${
+                onClick={() => onVerbalApproval(item.id)}
+                className={`flex-1 h-9 rounded-lg text-[10px] font-extrabold flex items-center justify-center gap-1 border transition-all ${
                   isDark 
-                    ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20' 
-                    : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
+                    ? 'bg-blue-600/10 border-blue-500/20 text-blue-400 hover:bg-blue-600/20' 
+                    : 'bg-blue-50 border-blue-200 text-blue-650 hover:bg-blue-100'
                 }`}
               >
-                <Archive className="w-3 h-3" />
-                <span>Close Out</span>
+                <UserCheck className="w-3 h-3" />
+                <span>Phone Auth</span>
               </button>
-            </div>
+            </>
           )}
 
           {item.status === 'APPROVED' && (
@@ -1356,23 +1346,13 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
                 <Wrench className="w-3.5 h-3.5 text-blue-500" />
                 <span>Edit Jobs</span>
               </Link>
-              {onResendSms && (
-                <button
-                  type="button"
-                  onClick={() => onResendSms(item)}
-                  className="flex-1 h-9 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all flex items-center justify-center gap-1 border border-blue-500/20 shadow-xs"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Resend Receipt</span>
-                </button>
-              )}
               <button
                 type="button"
                 onClick={() => onComplete(item.id)}
                 className="flex-1 h-9 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all flex items-center justify-center gap-1 border border-emerald-600/20 shadow-xs"
               >
                 <CheckCircle className="w-3.5 h-3.5" />
-                <span>Close Out</span>
+                <span>Complete Repair</span>
               </button>
             </div>
           )}
@@ -1390,27 +1370,16 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
                 <Wrench className="w-3.5 h-3.5 text-blue-500" />
                 <span>Edit Jobs</span>
               </Link>
-              {onResendSms && (
-                <button
-                  type="button"
-                  onClick={() => onResendSms(item)}
-                  className="flex-1 h-9 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all flex items-center justify-center gap-1 border border-blue-500/20 shadow-xs"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Resend Quote</span>
-                </button>
-              )}
               <button
                 type="button"
-                onClick={() => onComplete(item.id)}
+                onClick={() => onComplete(item.id)} // Clean it up as well
                 className={`flex-1 h-9 rounded-lg text-xs font-bold border transition-colors ${
                   isDark 
                     ? 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-750 hover:text-white' 
                     : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
                 }`}
               >
-                <Archive className="w-3.5 h-3.5" />
-                <span>Close Out</span>
+                <span>Clear Card</span>
               </button>
             </div>
           )}
