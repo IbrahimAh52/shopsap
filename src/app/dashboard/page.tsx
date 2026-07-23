@@ -27,7 +27,8 @@ import {
   LogOut,
   Loader2,
   Settings,
-  ChevronDown
+  ChevronDown,
+  Archive
 } from 'lucide-react';
 import { db, Inspection, isSupabaseConfigured } from '@/lib/db';
 import { offlineQueue } from '@/lib/offline-queue';
@@ -382,6 +383,36 @@ export default function MechanicDashboard() {
       console.error('Error sending quote direct:', err);
       alert('Error sending quote: ' + err.message);
     }
+  };
+
+  // Action: Resend SMS Receipt link to client anytime
+  const handleResendSms = (item: Inspection) => {
+    const costNum = item.items?.reduce((sum, i) => sum + (i.cost || 0), 0) || item.estimatedCost;
+    const jobsSummary = item.items && item.items.length > 1
+      ? `${item.items[0].name} & ${item.items.length - 1} other jobs`
+      : (item.repairName || 'General Repair');
+      
+    const quoteUrl = `${window.location.origin}/quote/${item.id}`;
+    const statusText = item.status === 'APPROVED' ? 'Approved Receipt' : item.status === 'DECLINED' ? 'Declined Quote' : 'Checkup Report';
+    const smsText = `${item.shopName || 'ShopSnap'}: ${item.vehicleMake} ${item.vehicleModel} ${statusText}. Required service: ${jobsSummary}. Estimate: $${costNum.toFixed(2)}. View details here: ${quoteUrl}`;
+
+    localStorage.setItem('shopsnap_sms_log', JSON.stringify({
+      id: item.id,
+      phone: item.customerPhone,
+      text: smsText
+    }));
+
+    setLastSmsMessage({
+      id: item.id,
+      phone: item.customerPhone,
+      text: smsText
+    });
+
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const separator = isIOS ? '&' : '?';
+    const smsUrl = `sms:${item.customerPhone}${separator}body=${encodeURIComponent(smsText)}`;
+    window.location.href = smsUrl;
   };
 
   // Harvest list of advisors dynamically from current inspections
@@ -831,6 +862,7 @@ export default function MechanicDashboard() {
                     item={i} 
                     isDark={isDark} 
                     formatCost={formatCost}
+                    onResendSms={handleResendSms}
                   />
                 ))}
               </div>
@@ -1086,9 +1118,10 @@ interface InspectionCardProps {
   onVerbalApproval: (id: string) => void;
   onComplete: (id: string) => void;
   onSendQuoteDirect?: (item: Inspection) => void;
+  onResendSms?: (item: Inspection) => void;
 }
 
-function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, onComplete, onSendQuoteDirect }: InspectionCardProps) {
+function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, onComplete, onSendQuoteDirect, onResendSms }: InspectionCardProps) {
   const urgencyColor = {
     URGENT: isDark ? 'bg-red-505/10 text-red-400 border-red-900/30' : 'bg-red-50 text-red-650 border-red-100',
     RECOMMENDED: isDark ? 'bg-amber-505/10 text-amber-400 border-amber-900/30' : 'bg-amber-50 text-amber-650 border-amber-100',
@@ -1245,11 +1278,11 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
           )}
 
           {item.status === 'SENT' && (
-            <>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full">
               {/* Edit / Add Jobs Button */}
               <Link
                 href={`/dashboard/new?id=${item.id}`}
-                className={`flex-1 h-9 rounded-lg text-[10px] font-extrabold flex items-center justify-center gap-1 border transition-all ${
+                className={`h-9 rounded-lg text-[10px] font-extrabold flex items-center justify-center gap-1 border transition-all ${
                   isDark 
                     ? 'bg-gray-800 border-gray-700 text-gray-350 hover:bg-gray-750 hover:text-white' 
                     : 'bg-gray-50 border-gray-305 text-gray-750 hover:bg-gray-100 hover:text-gray-900 shadow-xs'
@@ -1259,11 +1292,21 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
                 <span>Edit Jobs</span>
               </Link>
 
-              {/* Resend/Copy Quote Link */}
+              {/* Resend Text */}
+              <button 
+                type="button"
+                onClick={() => onResendSms ? onResendSms(item) : onCopyLink(item.id)}
+                className="h-9 rounded-lg text-[10px] font-extrabold flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-xs"
+              >
+                <Send className="w-3 h-3" />
+                <span>Resend Text</span>
+              </button>
+
+              {/* Copy Quote Link */}
               <button 
                 type="button"
                 onClick={() => onCopyLink(item.id)}
-                className={`flex-1 h-9 rounded-lg text-[10px] font-extrabold flex items-center justify-center gap-1 border transition-all ${
+                className={`h-9 rounded-lg text-[10px] font-extrabold flex items-center justify-center gap-1 border transition-all ${
                   copiedId === item.id 
                     ? 'bg-emerald-600 border-emerald-500 text-white' 
                     : (isDark 
@@ -1284,20 +1327,20 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
                 )}
               </button>
 
-              {/* Log Verbal Phone Approval */}
+              {/* Close Out Receipt */}
               <button
                 type="button"
-                onClick={() => onVerbalApproval(item.id)}
-                className={`flex-1 h-9 rounded-lg text-[10px] font-extrabold flex items-center justify-center gap-1 border transition-all ${
+                onClick={() => onComplete(item.id)}
+                className={`h-9 rounded-lg text-[10px] font-extrabold flex items-center justify-center gap-1 border transition-all ${
                   isDark 
-                    ? 'bg-blue-600/10 border-blue-500/20 text-blue-400 hover:bg-blue-600/20' 
-                    : 'bg-blue-50 border-blue-200 text-blue-650 hover:bg-blue-100'
+                    ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20' 
+                    : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
                 }`}
               >
-                <UserCheck className="w-3 h-3" />
-                <span>Phone Auth</span>
+                <Archive className="w-3 h-3" />
+                <span>Close Out</span>
               </button>
-            </>
+            </div>
           )}
 
           {item.status === 'APPROVED' && (
@@ -1313,13 +1356,23 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
                 <Wrench className="w-3.5 h-3.5 text-blue-500" />
                 <span>Edit Jobs</span>
               </Link>
+              {onResendSms && (
+                <button
+                  type="button"
+                  onClick={() => onResendSms(item)}
+                  className="flex-1 h-9 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all flex items-center justify-center gap-1 border border-blue-500/20 shadow-xs"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Resend Receipt</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => onComplete(item.id)}
                 className="flex-1 h-9 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition-all flex items-center justify-center gap-1 border border-emerald-600/20 shadow-xs"
               >
                 <CheckCircle className="w-3.5 h-3.5" />
-                <span>Complete Repair</span>
+                <span>Close Out</span>
               </button>
             </div>
           )}
@@ -1337,16 +1390,27 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
                 <Wrench className="w-3.5 h-3.5 text-blue-500" />
                 <span>Edit Jobs</span>
               </Link>
+              {onResendSms && (
+                <button
+                  type="button"
+                  onClick={() => onResendSms(item)}
+                  className="flex-1 h-9 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all flex items-center justify-center gap-1 border border-blue-500/20 shadow-xs"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Resend Quote</span>
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => onComplete(item.id)} // Clean it up as well
+                onClick={() => onComplete(item.id)}
                 className={`flex-1 h-9 rounded-lg text-xs font-bold border transition-colors ${
                   isDark 
                     ? 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-750 hover:text-white' 
                     : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
                 }`}
               >
-                <span>Clear Card</span>
+                <Archive className="w-3.5 h-3.5" />
+                <span>Close Out</span>
               </button>
             </div>
           )}
@@ -1366,17 +1430,17 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
   );
 }
 
-// ==========================================
-// ARCHIVED CARD COMPONENT
+// =======================================// ARCHIVED CARD COMPONENT
 // ==========================================
 
 interface ArchivedCardProps {
   item: Inspection;
   isDark: boolean;
   formatCost: (val: number) => string;
+  onResendSms?: (item: Inspection) => void;
 }
 
-function ArchivedCard({ item, isDark, formatCost }: ArchivedCardProps) {
+function ArchivedCard({ item, isDark, formatCost, onResendSms }: ArchivedCardProps) {
   const formattedDate = new Date(item.updatedAt || item.createdAt).toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
@@ -1387,7 +1451,7 @@ function ArchivedCard({ item, isDark, formatCost }: ArchivedCardProps) {
 
   return (
     <div className={`relative rounded-xl border p-4 transition-colors duration-200 overflow-hidden flex flex-col justify-between ${
-      isDark ? 'bg-[#0f172a]/65 border-gray-850' : 'bg-white border-gray-250/80 shadow-xs'
+      isDark ? 'bg-[#0f172a]/65 border-gray-855' : 'bg-white border-gray-250/80 shadow-xs'
     }`}>
       {/* Indicator Stripe */}
       <div className="absolute left-0 top-0 bottom-0 w-1 bg-slate-500" />
@@ -1472,20 +1536,32 @@ function ArchivedCard({ item, isDark, formatCost }: ArchivedCardProps) {
           </div>
         )}
 
-        {/* View Customer Receipt Link */}
-        <Link
-          href={`/quote/${item.id}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`w-full h-8 mt-2 rounded-lg text-[10px] font-bold border transition-colors flex items-center justify-center gap-1 ${
-            isDark 
-              ? 'bg-gray-800/40 border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white' 
-              : 'bg-gray-50 border-gray-250 text-gray-750 hover:bg-gray-100 hover:text-gray-900'
-          }`}
-        >
-          <ExternalLink className="w-3 h-3" />
-          <span>View Customer Receipt</span>
-        </Link>
+        <div className="flex items-center gap-2 mt-2">
+          {/* View Customer Receipt Link */}
+          <Link
+            href={`/quote/${item.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`flex-1 h-8 rounded-lg text-[10px] font-bold border transition-colors flex items-center justify-center gap-1 ${
+              isDark 
+                ? 'bg-gray-800/40 border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white' 
+                : 'bg-gray-50 border-gray-250 text-gray-750 hover:bg-gray-100 hover:text-gray-900'
+            }`}
+          >
+            <ExternalLink className="w-3 h-3" />
+            <span>View Receipt</span>
+          </Link>
+          {onResendSms && (
+            <button
+              type="button"
+              onClick={() => onResendSms(item)}
+              className="flex-1 h-8 rounded-lg text-[10px] font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center justify-center gap-1 shadow-xs"
+            >
+              <Send className="w-3 h-3" />
+              <span>Resend Text</span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
