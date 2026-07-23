@@ -1184,9 +1184,17 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
     <div className={`relative rounded-xl border p-4 transition-all overflow-hidden flex flex-col justify-between transition-colors duration-200 ${
       isDark ? 'bg-[#0f172a] border-gray-850 hover:border-gray-700' : 'bg-white border-gray-250/80 shadow-xs hover:border-gray-350'
     }`}>
-      {/* Left indicator stripe */}
+      {/* Left indicator stripe matching status section */}
       <div className={`absolute left-0 top-0 bottom-0 w-1 ${
-        item.urgency === 'URGENT' ? 'bg-red-500' : item.urgency === 'RECOMMENDED' ? 'bg-amber-500' : 'bg-gray-400'
+        item.status === 'AWAITING_INSPECTION'
+          ? 'bg-amber-500'
+          : item.status === 'SENT'
+            ? 'bg-blue-500'
+            : item.status === 'APPROVED'
+              ? 'bg-emerald-500'
+              : item.status === 'DECLINED'
+                ? 'bg-red-500'
+                : 'bg-slate-400'
       }`} />
 
       <div className="pl-1">
