@@ -703,7 +703,7 @@ export default function MechanicDashboard() {
           <section className="space-y-6">
             
             {/* Mobile Lane Sub-Tabs Selector */}
-            <div className="flex md:hidden items-center gap-1.5 p-1 bg-gray-50/5 dark:bg-gray-950/20 rounded-xl border border-gray-200/50 dark:border-gray-800/80 mb-4 overflow-x-auto select-none no-scrollbar">
+            <div className="flex md:hidden items-center gap-1.5 p-1 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 mb-4 overflow-x-auto select-none no-scrollbar shadow-xs">
               {[
                 { id: 'awaiting', label: 'Awaiting', count: awaitingInspection.length, dotColor: 'bg-amber-500' },
                 { id: 'sent', label: 'Sent', count: sentToCustomer.length, dotColor: 'bg-blue-500' },
@@ -714,14 +714,19 @@ export default function MechanicDashboard() {
                   key={lane.id}
                   type="button"
                   onClick={() => setActiveMobileLane(lane.id as any)}
-                  className={`flex-1 min-w-[80px] py-2 px-2.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 border ${
+                  className={`flex-1 min-w-[80px] py-2 px-2.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 border ${
                     activeMobileLane === lane.id
-                      ? 'bg-blue-600/10 text-blue-500 border-blue-500/20 shadow-xs'
-                      : 'text-gray-500 hover:text-gray-850 dark:text-gray-400 dark:hover:text-white border-transparent'
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                      : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border-gray-200 dark:border-gray-800'
                   }`}
                 >
-                  <span className={`w-1.5 h-1.5 rounded-full ${lane.dotColor}`} />
-                  <span>{lane.label} ({lane.count})</span>
+                  <span className={`w-2 h-2 rounded-full ${lane.dotColor}`} />
+                  <span>{lane.label}</span>
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-mono ${
+                    activeMobileLane === lane.id ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'
+                  }`}>
+                    {lane.count}
+                  </span>
                 </button>
               ))}
             </div>
@@ -1159,30 +1164,27 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
       }`} />
 
       <div className="pl-1">
-        {/* Clickable Header area on mobile */}
-        <div 
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-start justify-between cursor-pointer md:cursor-default"
-        >
+        {/* Header area */}
+        <div className="flex items-start justify-between">
           <div>
             <h3 className={`font-bold text-base ${isDark ? 'text-gray-200' : 'text-gray-850'}`}>
               {item.vehicleYear} {item.vehicleMake} {item.vehicleModel}
             </h3>
             
-            {/* Phone, VIN, Advisor: hidden on mobile unless expanded */}
-            <div className={`md:block ${isExpanded ? 'block' : 'hidden'}`}>
-              <div className="flex items-center gap-1.5 mt-1.5 text-xs text-gray-450">
+            {/* Phone, VIN, Advisor: Always visible */}
+            <div className="space-y-1 mt-1">
+              <div className="flex items-center gap-1.5 text-xs text-gray-450">
                 <Phone className="w-3 h-3 text-gray-455 shrink-0" />
                 <span>{item.customerPhone}</span>
               </div>
               {item.vin && (
-                <div className="flex items-center gap-1.5 mt-1.5 text-[10px] font-mono uppercase tracking-wider text-blue-500 font-semibold">
+                <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-blue-500 font-semibold">
                   <span className="text-[9px] font-bold bg-blue-500/10 px-1 py-0.5 rounded border border-blue-500/20">VIN</span>
                   <span>{item.vin}</span>
                 </div>
               )}
               {item.advisorName && (
-                <div className={`flex items-center gap-1 mt-1.5 text-[10px] font-semibold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                <div className={`flex items-center gap-1 mt-1 text-[10px] font-semibold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                   <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
                     isDark ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-700'
                   }`}>
@@ -1197,9 +1199,6 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
             <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider ${urgencyColor}`}>
               {item.urgency}
             </span>
-            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 md:hidden ${
-              isExpanded ? 'rotate-180' : 'rotate-0'
-            }`} />
           </div>
         </div>
 
@@ -1230,10 +1229,8 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
         </div>
       </div>
 
-      {/* Action Footer Button Group - hidden on mobile unless expanded */}
-      <div className={`border-t mt-4 pt-3 flex flex-col gap-2 pl-1 md:flex ${
-        isExpanded ? 'flex' : 'hidden'
-      } ${
+      {/* Action Footer Button Group - Always visible */}
+      <div className={`border-t mt-4 pt-3 flex flex-col gap-2 pl-1 ${
         isDark ? 'border-gray-800/80' : 'border-gray-150'
       }`}>
         <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-gray-500">
