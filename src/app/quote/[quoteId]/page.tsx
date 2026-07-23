@@ -174,14 +174,12 @@ export default function CustomerQuotePortal() {
 
   const handleResendSms = () => {
     if (!inspection) return;
-    const costNum = inspection.items?.reduce((sum, i) => sum + (i.cost || 0), 0) || inspection.estimatedCost;
-    const jobsSummary = inspection.items && inspection.items.length > 1
-      ? `${inspection.items[0].name} & ${inspection.items.length - 1} other jobs`
-      : (inspection.repairName || 'General Repair');
+    const subtotalCost = inspection.items?.reduce((sum, i) => sum + (i.cost || 0), 0) || inspection.estimatedCost || 0;
+    const totalWithTax = subtotalCost * (1 + taxInfo.rate);
       
-    const quoteUrl = window.location.href;
-    const statusText = inspection.status === 'APPROVED' ? 'Approved Receipt' : inspection.status === 'DECLINED' ? 'Declined Quote' : 'Checkup Report';
-    const smsText = `${inspection.shopName || 'ShopSnap'}: ${inspection.vehicleMake} ${inspection.vehicleModel} ${statusText}. Required service: ${jobsSummary}. Estimate: $${costNum.toFixed(2)}. View details here: ${quoteUrl}`;
+    const receiptUrl = window.location.href;
+    const vehicleStr = [inspection.vehicleYear, inspection.vehicleMake, inspection.vehicleModel].filter(Boolean).join(' ');
+    const smsText = `${inspection.shopName || 'ShopSnap'}: ${vehicleStr} Receipt. Total: $${totalWithTax.toFixed(2)}. View your completed receipt here: ${receiptUrl}`;
 
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -227,7 +225,7 @@ export default function CustomerQuotePortal() {
             className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors"
           >
             <Send className="w-3.5 h-3.5" />
-            <span>Resend Link</span>
+            <span>Resend Receipt</span>
           </button>
           <Link
             href="/dashboard"
