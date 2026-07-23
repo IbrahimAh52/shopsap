@@ -117,9 +117,10 @@ function NewInspectionForm() {
   const [isAddingAdvisor, setIsAddingAdvisor] = useState<boolean>(false);
   const [shopName, setShopName] = useState<string>(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('shopsnap_shop_name') || 'ShopSnap';
+      const saved = localStorage.getItem('shopsnap_shop_name');
+      return (saved && saved !== 'ShopSnap') ? saved : '';
     }
-    return 'ShopSnap';
+    return '';
   });
   const [province, setProvince] = useState<string>(() => {
     if (typeof window !== 'undefined') {
@@ -319,7 +320,10 @@ function NewInspectionForm() {
 
     const inspectionId = editId || generateUUID();
     const isEditing = !!editId;
-    const finalShopName = shopName || 'ShopSnap';
+    const savedShop = typeof window !== 'undefined' ? localStorage.getItem('shopsnap_shop_name') : null;
+    const finalShopName = (shopName && shopName !== 'ShopSnap' && shopName.trim() !== '') 
+      ? shopName 
+      : ((savedShop && savedShop !== 'ShopSnap' && savedShop.trim() !== '') ? savedShop : 'Auto Repair Shop');
     const targetStatus: 'AWAITING_INSPECTION' | 'SENT' = actionType === 'draft' ? 'AWAITING_INSPECTION' : 'SENT';
 
     const metadata = {

@@ -83,9 +83,10 @@ export default function MechanicDashboard() {
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [shopNameSetting, setShopNameSetting] = useState<string>(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('shopsnap_shop_name') || 'ShopSnap';
+      const saved = localStorage.getItem('shopsnap_shop_name');
+      return (saved && saved !== 'ShopSnap') ? saved : '';
     }
-    return 'ShopSnap';
+    return '';
   });
   const [shopProvinceSetting, setShopProvinceSetting] = useState<string>(() => {
     if (typeof window !== 'undefined') {
@@ -355,8 +356,13 @@ export default function MechanicDashboard() {
         ? `${item.items[0].name} & ${item.items.length - 1} other jobs`
         : (item.repairName || 'General Repair');
         
+      const savedShop = typeof window !== 'undefined' ? localStorage.getItem('shopsnap_shop_name') : null;
+      const displayShop = (item.shopName && item.shopName !== 'ShopSnap' && item.shopName.trim() !== '') 
+        ? item.shopName 
+        : ((savedShop && savedShop !== 'ShopSnap' && savedShop.trim() !== '') ? savedShop : 'Auto Repair Shop');
+
       const quoteUrl = `${window.location.origin}/quote/${item.id}`;
-      const smsText = `${item.shopName || 'ShopSnap'}: ${item.vehicleMake} ${item.vehicleModel} checkup. Required service: ${jobsSummary}. Estimate: $${costNum.toFixed(2)}. Review details & approve here: ${quoteUrl}`;
+      const smsText = `${displayShop}: ${item.vehicleMake} ${item.vehicleModel} checkup. Required service: ${jobsSummary}. Estimate: $${costNum.toFixed(2)}. Review details & approve here: ${quoteUrl}`;
 
       localStorage.setItem('shopsnap_sms_log', JSON.stringify({
         id: item.id,

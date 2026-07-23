@@ -168,6 +168,11 @@ export default function CustomerQuotePortal() {
   const taxAmount = subtotal * taxInfo.rate;
   const totalAmount = subtotal + taxAmount;
 
+  const savedShopName = typeof window !== 'undefined' ? localStorage.getItem('shopsnap_shop_name') : null;
+  const displayShopName = (inspection.shopName && inspection.shopName !== 'ShopSnap' && inspection.shopName.trim() !== '')
+    ? inspection.shopName
+    : ((savedShopName && savedShopName !== 'ShopSnap' && savedShopName.trim() !== '') ? savedShopName : 'Auto Repair Shop');
+
   return (
     <div className="flex flex-col flex-1 min-h-screen bg-gray-50 text-gray-900 font-sans antialiased selection:bg-blue-100">
       
@@ -183,7 +188,7 @@ export default function CustomerQuotePortal() {
             <Wrench className="w-4 h-4" />
           </div>
           <span className="text-base font-bold tracking-tight text-gray-900">
-            {inspection.shopName || 'ShopSnap'}
+            {displayShopName}
           </span>
         </div>
 
