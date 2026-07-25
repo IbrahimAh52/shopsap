@@ -1233,10 +1233,14 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
             
             {/* Phone, VIN, Advisor: Always visible */}
             <div className="space-y-1 mt-1">
-              <div className="flex items-center gap-1.5 text-xs text-gray-450">
-                <Phone className="w-3 h-3 text-gray-455 shrink-0" />
+              <a 
+                href={`tel:${item.customerPhone.replace(/[^0-9+]/g, '') || item.customerPhone}`}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline dark:text-blue-400 transition-colors group"
+                title={`Call ${item.customerPhone}`}
+              >
+                <Phone className="w-3 h-3 text-blue-500 shrink-0 group-hover:scale-110 transition-transform" />
                 <span>{item.customerPhone}</span>
-              </div>
+              </a>
               {item.vin && (
                 <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-blue-500 font-semibold">
                   <span className="text-[9px] font-bold bg-blue-500/10 px-1 py-0.5 rounded border border-blue-500/20">VIN</span>
@@ -1479,10 +1483,14 @@ function ArchivedCard({ item, isDark, formatCost, onResendSms, onDelete }: Archi
             <h3 className={`font-bold text-base ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
               {item.vehicleYear} {item.vehicleMake} {item.vehicleModel}
             </h3>
-            <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-450">
-              <Phone className="w-3 h-3 text-gray-450 shrink-0" />
+            <a 
+              href={`tel:${item.customerPhone.replace(/[^0-9+]/g, '') || item.customerPhone}`}
+              className="inline-flex items-center gap-1.5 mt-1 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline dark:text-blue-400 transition-colors group"
+              title={`Call ${item.customerPhone}`}
+            >
+              <Phone className="w-3 h-3 text-blue-500 shrink-0 group-hover:scale-110 transition-transform" />
               <span>{item.customerPhone}</span>
-            </div>
+            </a>
             {item.vin && (
               <div className="flex items-center gap-1.5 mt-1.5 text-[10px] font-mono uppercase tracking-wider text-blue-500 font-semibold">
                 <span className="text-[9px] font-bold bg-blue-500/10 px-1 py-0.5 rounded border border-blue-500/20">VIN</span>
