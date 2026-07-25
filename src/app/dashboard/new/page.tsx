@@ -20,7 +20,8 @@ import {
   CheckCircle,
   Send,
   FileText,
-  Wrench
+  Wrench,
+  Clock
 } from 'lucide-react';
 import { db, isSupabaseConfigured, generateUUID, LineItem } from '@/lib/db';
 import { offlineQueue } from '@/lib/offline-queue';
@@ -929,39 +930,39 @@ function NewInspectionForm() {
           </div>
 
           {/* Action Submission Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 mt-2">
-            {/* Save Draft Button */}
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 mt-2">
+            {/* Send to Await Queue Button */}
             <button
               type="button"
               disabled={isSubmitting}
               onClick={(e) => handleSubmit(e, 'draft')}
-              className={`flex-1 h-14 rounded-2xl font-bold transition-all active:scale-[0.99] flex items-center justify-center gap-2 border text-base shadow-sm ${
+              className={`h-13 sm:h-14 rounded-xl sm:rounded-2xl font-bold transition-all active:scale-[0.99] flex items-center justify-center gap-1.5 sm:gap-2 border text-xs sm:text-base shadow-xs ${
                 isDark 
-                  ? 'bg-gray-800 hover:bg-gray-750 border-gray-700 text-gray-300' 
-                  : 'bg-gray-50 hover:bg-gray-100 border-gray-300 text-gray-700'
+                  ? 'bg-gray-800 hover:bg-gray-750 border-gray-700 text-gray-200' 
+                  : 'bg-white hover:bg-gray-50 border-gray-300 text-gray-800 shadow-2xs'
               }`}
             >
               {isSubmitting ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
               ) : (
-                <FileText className="w-5 h-5 text-gray-550" />
+                <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 shrink-0" />
               )}
-              <span>Save Draft (Queue)</span>
+              <span className="text-center leading-tight">Send to Await Queue</span>
             </button>
 
-            {/* Send to Customer Button */}
+            {/* Send Quote to Customer Button */}
             <button
               type="button"
               disabled={isSubmitting}
               onClick={(e) => handleSubmit(e, 'send')}
-              className="flex-[1.5] h-14 rounded-2xl bg-blue-600 hover:bg-blue-750 text-white font-bold transition-all active:scale-[0.99] flex items-center justify-center gap-2 border border-blue-500/20 shadow-lg shadow-blue-500/10 text-base"
+              className="h-13 sm:h-14 rounded-xl sm:rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all active:scale-[0.99] flex items-center justify-center gap-1.5 sm:gap-2 border border-blue-500/20 shadow-sm shadow-blue-500/10 text-xs sm:text-base"
             >
               {isSubmitting ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
               ) : (
-                <Send className="w-5 h-5" />
+                <Send className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
               )}
-              <span>Send Quote to Customer</span>
+              <span className="text-center leading-tight">Send Quote to Customer</span>
             </button>
           </div>
         </form>
