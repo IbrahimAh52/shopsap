@@ -1350,9 +1350,9 @@ function VinScannerModal({ isOpen, onClose, onDecode, isDark }: VinScannerModalP
 
                 {/* Overlays on top of the video */}
                 {hasCameraPermission === 'granted' && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 select-none">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 select-none gap-3">
                     {/* Industrial Barcode Alignment Box */}
-                    <div className="relative w-full max-w-[280px] h-[95px] border-2 border-white/70 rounded-xl bg-black/25 flex flex-col items-center justify-between p-2 shadow-2xl">
+                    <div className="relative w-full max-w-[280px] h-[95px] border-2 border-white/70 rounded-xl bg-black/25 flex items-center justify-center shadow-2xl">
                       {/* Crisp Corner Brackets */}
                       <div className="absolute -top-1.5 -left-1.5 w-4 h-4 border-t-2 border-l-2 border-blue-400 rounded-tl-md" />
                       <div className="absolute -top-1.5 -right-1.5 w-4 h-4 border-t-2 border-r-2 border-blue-400 rounded-tr-md" />
@@ -1360,15 +1360,13 @@ function VinScannerModal({ isOpen, onClose, onDecode, isDark }: VinScannerModalP
                       <div className="absolute -bottom-1.5 -right-1.5 w-4 h-4 border-b-2 border-r-2 border-blue-400 rounded-br-md" />
 
                       {/* Alignment Line Guide */}
-                      <div className="w-full flex-1 flex items-center justify-center">
-                        <div className="w-11/12 h-0.5 bg-blue-500/50 rounded-full" />
-                      </div>
-
-                      {/* Status indicator pill */}
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-white bg-black/70 px-3 py-0.5 rounded-full border border-white/10">
-                        {isSimulating ? `Decoding Barcode...` : 'Center Barcode in Frame'}
-                      </span>
+                      <div className="w-11/12 h-0.5 bg-blue-500/50 rounded-full" />
                     </div>
+
+                    {/* Status indicator pill BELOW the frame */}
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-white bg-black/80 px-3 py-1 rounded-full border border-white/15 shadow-md">
+                      {isSimulating ? `Decoding Barcode...` : 'Center Barcode in Frame'}
+                    </span>
                   </div>
                 )}
 
