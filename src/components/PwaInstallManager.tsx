@@ -204,7 +204,7 @@ export function PwaStatusWidget({ isDark }: { isDark: boolean }) {
       {isStandalone ? (
         <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-bold">
           <CheckCircle className="w-4 h-4 shrink-0" />
-          <span>ShopSnap App Installed & Ready (Native Mode)</span>
+          <span>ShopSnap App Installed & Ready</span>
         </div>
       ) : (
         <div className="space-y-2">
