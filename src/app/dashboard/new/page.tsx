@@ -1388,68 +1388,6 @@ function VinScannerModal({ isOpen, onClose, onDecode, isDark }: VinScannerModalP
                 )}
               </div>
 
-              {/* Sample VINs section */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-1">
-                  <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                    Sample VINs for Quick Testing
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <button
-                    type="button"
-                    disabled={isSimulating}
-                    onClick={() => handleSimulateScan('1FTFW1ED4MFD00001')}
-                    className={`h-9 px-2.5 rounded-xl text-[10px] font-bold border text-left flex items-center justify-between transition-all active:scale-[0.98] ${
-                      isDark 
-                        ? 'bg-gray-800/40 hover:bg-gray-800 border-gray-700 text-gray-300' 
-                        : 'bg-gray-50 hover:bg-gray-100 border-gray-300 text-gray-755'
-                    }`}
-                  >
-                    <span>Ford F-150</span>
-                    <span className="text-[9px] font-mono text-gray-500">2021</span>
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isSimulating}
-                    onClick={() => handleSimulateScan('4T1B11HK5LU010001')}
-                    className={`h-9 px-2.5 rounded-xl text-[10px] font-bold border text-left flex items-center justify-between transition-all active:scale-[0.98] ${
-                      isDark 
-                        ? 'bg-gray-800/40 hover:bg-gray-800 border-gray-700 text-gray-300' 
-                        : 'bg-gray-50 hover:bg-gray-100 border-gray-300 text-gray-755'
-                    }`}
-                  >
-                    <span>Toyota Camry</span>
-                    <span className="text-[9px] font-mono text-gray-500">2020</span>
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isSimulating}
-                    onClick={() => handleSimulateScan('1HGCV1F13KA010001')}
-                    className={`h-9 px-2.5 rounded-xl text-[10px] font-bold border text-left flex items-center justify-between transition-all active:scale-[0.98] ${
-                      isDark 
-                        ? 'bg-gray-800/40 hover:bg-gray-800 border-gray-700 text-gray-300' 
-                        : 'bg-gray-50 hover:bg-gray-100 border-gray-300 text-gray-755'
-                    }`}
-                  >
-                    <span>Honda Accord</span>
-                    <span className="text-[9px] font-mono text-gray-500">2019</span>
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isSimulating}
-                    onClick={() => handleSimulateScan('1C4HJXDG9JW100001')}
-                    className={`h-9 px-2.5 rounded-xl text-[10px] font-bold border text-left flex items-center justify-between transition-all active:scale-[0.98] ${
-                      isDark 
-                        ? 'bg-gray-800/40 hover:bg-gray-800 border-gray-700 text-gray-300' 
-                        : 'bg-gray-50 hover:bg-gray-100 border-gray-300 text-gray-755'
-                    }`}
-                  >
-                    <span>Jeep Wrangler</span>
-                    <span className="text-[9px] font-mono text-gray-500">2018</span>
-                  </button>
-                </div>
-              </div>
             </div>
           )}
 
@@ -1485,21 +1423,6 @@ function VinScannerModal({ isOpen, onClose, onDecode, isDark }: VinScannerModalP
                 <p className="text-[10px] text-gray-500 leading-normal">
                   Decodes using NHTSA database to fill Year, Make, and Model details automatically.
                 </p>
-              </div>
-
-              {/* Demo examples helper for copy-paste test */}
-              <div className={`p-3 rounded-xl border text-xs space-y-2 ${
-                isDark ? 'bg-gray-950/40 border-gray-800/60' : 'bg-gray-50 border-gray-200'
-              }`}>
-                <span className="font-semibold block text-[10px] text-gray-500 uppercase">Test VIN Examples to Copy:</span>
-                <div className="space-y-1.5 font-mono text-[10.5px]">
-                  <div className="flex justify-between items-center bg-gray-500/5 px-2 py-1 rounded">
-                    <span>Ford F-150: <strong className="text-blue-500 select-all">1FTFW1ED4MFD00001</strong></span>
-                  </div>
-                  <div className="flex justify-between items-center bg-gray-500/5 px-2 py-1 rounded">
-                    <span>Toyota Camry: <strong className="text-blue-500 select-all">4T1B11HK5LU010001</strong></span>
-                  </div>
-                </div>
               </div>
             </div>
           )}
