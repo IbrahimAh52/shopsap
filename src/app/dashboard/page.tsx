@@ -35,6 +35,7 @@ import {
 import { db, Inspection, isSupabaseConfigured } from '@/lib/db';
 import { offlineQueue } from '@/lib/offline-queue';
 import { auth, UserSession } from '@/lib/auth';
+import { PwaStatusWidget } from '@/components/PwaInstallManager';
 
 const CANADIAN_PROVINCES = [
   { code: 'AB', name: 'Alberta (5% GST)' },
@@ -1133,6 +1134,9 @@ export default function MechanicDashboard() {
               </div>
 
 
+
+              {/* PWA App Install & Status Widget */}
+              <PwaStatusWidget isDark={isDark} />
 
               {/* Province Selector */}
               <div>

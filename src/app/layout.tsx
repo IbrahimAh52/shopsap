@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import PwaRegister from "@/components/PwaRegister";
+import PwaInstallManager from "@/components/PwaInstallManager";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -48,6 +49,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-gray-50 text-gray-900 dark:bg-[#070b13] dark:text-gray-100 transition-colors">
         <PwaRegister />
+        <PwaInstallManager />
         {children}
       </body>
     </html>
