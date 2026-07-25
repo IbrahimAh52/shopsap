@@ -975,6 +975,18 @@ export default function MechanicDashboard() {
             )}
           </section>
         )}
+
+        {/* Clean Native Mobile End-of-List Footer */}
+        <div className="pt-6 pb-10 text-center select-none no-print">
+          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-bold shadow-2xs ${
+            isDark 
+              ? 'bg-gray-900/80 border-gray-800 text-gray-400' 
+              : 'bg-white border-gray-200/90 text-gray-500'
+          }`}>
+            <CheckCircle className="w-3.5 h-3.5 text-blue-500" />
+            <span>End of {activeTab === 'active' ? 'Active Inspections' : 'Archived Orders'}</span>
+          </div>
+        </div>
       </main>
 
       {/* Massive Floating + New Inspection Button */}
