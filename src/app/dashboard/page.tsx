@@ -1438,16 +1438,6 @@ function InspectionCard({ item, isDark, onCopyLink, copiedId, onVerbalApproval, 
               </button>
             </div>
           )}
-
-          {item.status === 'AWAITING_INSPECTION' && (
-            <Link
-              href="/dashboard/new"
-              className="w-full h-9 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white transition-all flex items-center justify-center gap-1"
-            >
-              <Clock className="w-3.5 h-3.5" />
-              <span>Record Inspection Video</span>
-            </Link>
-          )}
         </div>
       </div>
     </div>
