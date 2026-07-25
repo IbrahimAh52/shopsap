@@ -726,7 +726,7 @@ export default function MechanicDashboard() {
           <section className="space-y-6">
             
             {/* Mobile Lane Sub-Tabs Selector */}
-            <div className="flex md:hidden items-center gap-1.5 p-1.5 bg-white rounded-2xl border border-gray-200 mb-4 overflow-x-auto select-none no-scrollbar shadow-xs">
+            <div className="grid grid-cols-2 gap-2 md:hidden mb-4 select-none">
               {[
                 { 
                   id: 'awaiting', 
@@ -734,7 +734,7 @@ export default function MechanicDashboard() {
                   count: awaitingInspection.length, 
                   dotColor: 'bg-amber-500',
                   activeClass: 'bg-amber-600 text-white border-amber-600 shadow-xs',
-                  inactiveClass: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                  inactiveClass: 'bg-amber-50 text-amber-800 border-amber-200/80 hover:bg-amber-100'
                 },
                 { 
                   id: 'sent', 
@@ -742,7 +742,7 @@ export default function MechanicDashboard() {
                   count: sentToCustomer.length, 
                   dotColor: 'bg-blue-500',
                   activeClass: 'bg-blue-600 text-white border-blue-600 shadow-xs',
-                  inactiveClass: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                  inactiveClass: 'bg-blue-50 text-blue-800 border-blue-200/80 hover:bg-blue-100'
                 },
                 { 
                   id: 'approved', 
@@ -750,7 +750,7 @@ export default function MechanicDashboard() {
                   count: approvedReady.length, 
                   dotColor: 'bg-emerald-500',
                   activeClass: 'bg-emerald-600 text-white border-emerald-600 shadow-xs',
-                  inactiveClass: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                  inactiveClass: 'bg-emerald-50 text-emerald-800 border-emerald-200/80 hover:bg-emerald-100'
                 },
                 { 
                   id: 'declined', 
@@ -758,21 +758,23 @@ export default function MechanicDashboard() {
                   count: declined.length, 
                   dotColor: 'bg-red-500',
                   activeClass: 'bg-red-600 text-white border-red-600 shadow-xs',
-                  inactiveClass: 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+                  inactiveClass: 'bg-red-50 text-red-800 border-red-200/80 hover:bg-red-100'
                 }
               ].map((lane) => (
                 <button
                   key={lane.id}
                   type="button"
                   onClick={() => setActiveMobileLane(lane.id as any)}
-                  className={`flex-1 min-w-[85px] py-2 px-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 border ${
+                  className={`py-2.5 px-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-between border ${
                     activeMobileLane === lane.id ? lane.activeClass : lane.inactiveClass
                   }`}
                 >
-                  <span className={`w-2 h-2 rounded-full ${activeMobileLane === lane.id ? 'bg-white' : lane.dotColor}`} />
-                  <span>{lane.label}</span>
-                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-mono ${
-                    activeMobileLane === lane.id ? 'bg-white/20 text-white' : 'bg-white/80 border border-current/20'
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${activeMobileLane === lane.id ? 'bg-white' : lane.dotColor}`} />
+                    <span>{lane.label}</span>
+                  </div>
+                  <span className={`text-[10px] min-w-[22px] text-center px-1.5 py-0.5 rounded-full font-mono font-extrabold ${
+                    activeMobileLane === lane.id ? 'bg-white/20 text-white' : 'bg-white/90 border border-current/20 text-gray-800'
                   }`}>
                     {lane.count}
                   </span>
