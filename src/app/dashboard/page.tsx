@@ -1131,26 +1131,7 @@ export default function MechanicDashboard() {
                 </div>
               </div>
 
-              {/* Connection Status Switcher */}
-              <div>
-                <label className={`block text-[10px] font-bold uppercase tracking-wider mb-1.5 ${
-                  isDark ? 'text-gray-400' : 'text-gray-500'
-                }`}>
-                  Network Status
-                </label>
-                <button
-                  type="button"
-                  onClick={toggleNetwork}
-                  className={`w-full h-9 rounded-lg text-xs font-bold border transition-colors flex items-center justify-center gap-1.5 ${
-                    isOnline 
-                      ? 'bg-emerald-555/10 border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/20' 
-                      : 'bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500/20'
-                  }`}
-                >
-                  {isOnline ? <Wifi className="w-3.5 h-3.5" /> : <WifiOff className="w-3.5 h-3.5" />}
-                  <span>{isOnline ? 'Online (Connected)' : 'Offline Mode (Simulated)'}</span>
-                </button>
-              </div>
+
 
               {/* Province Selector */}
               <div>

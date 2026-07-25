@@ -501,16 +501,6 @@ function NewInspectionForm() {
           >
             {isDark ? <Sun className="w-4 h-4 text-yellow-450" /> : <Moon className="w-4 h-4" />}
           </button>
-
-          {isOnline ? (
-            <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-              <Wifi className="w-3 h-3" /> ONLINE
-            </div>
-          ) : (
-            <div className="flex items-center gap-1 text-[10px] font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20 animate-pulse">
-              <WifiOff className="w-3 h-3" /> OFFLINE
-            </div>
-          )}
         </div>
       </header>
 
