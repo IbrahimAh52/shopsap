@@ -1270,23 +1270,6 @@ function VinScannerModal({ isOpen, onClose, onDecode, isDark }: VinScannerModalP
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-      <style>{`
-        @keyframes scan-laser {
-          0% { top: 0%; }
-          50% { top: 100%; }
-          100% { top: 0%; }
-        }
-        @keyframes pulse-glow {
-          0%, 100% { opacity: 0.5; transform: scale(1); }
-          50% { opacity: 1; transform: scale(1.02); }
-        }
-        .animate-laser {
-          animation: scan-laser 2.5s infinite linear;
-        }
-        .animate-glow {
-          animation: pulse-glow 2s infinite ease-in-out;
-        }
-      `}</style>
 
       <div className={`w-full max-w-md overflow-hidden rounded-2xl border shadow-2xl flex flex-col ${
         isDark ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-200 text-gray-900'
@@ -1297,7 +1280,7 @@ function VinScannerModal({ isOpen, onClose, onDecode, isDark }: VinScannerModalP
         }`}>
           <div className="flex items-center gap-2">
             <QrCode className="w-5 h-5 text-blue-500" />
-            <h3 className="font-bold text-sm">Vehicle VIN Scanner</h3>
+            <h3 className="font-bold text-sm">Vehicle VIN Barcode Scanner</h3>
           </div>
           <button 
             type="button" 
@@ -1328,7 +1311,7 @@ function VinScannerModal({ isOpen, onClose, onDecode, isDark }: VinScannerModalP
                 : 'border-transparent text-gray-500 hover:text-gray-750'
             }`}
           >
-            Camera Scanner
+            Barcode Camera
           </button>
           <button
             type="button"
@@ -1352,9 +1335,9 @@ function VinScannerModal({ isOpen, onClose, onDecode, isDark }: VinScannerModalP
           {activeTab === 'camera' && (
             <div className="space-y-4 flex-1 flex flex-col">
               
-              {/* Viewfinder area */}
+              {/* Clean Barcode Viewfinder Area */}
               <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-black border border-gray-800 shadow-inner flex flex-col items-center justify-center">
-                {/* Video element is ALWAYS rendered so the ref is always bound on mount */}
+                {/* Video element */}
                 <video 
                   ref={videoRef}
                   autoPlay 
@@ -1367,33 +1350,26 @@ function VinScannerModal({ isOpen, onClose, onDecode, isDark }: VinScannerModalP
 
                 {/* Overlays on top of the video */}
                 {hasCameraPermission === 'granted' && (
-                  <>
-                    {/* Visual Scan Box & Laser Overlay */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="relative w-4/5 h-1/3 border-2 border-dashed border-emerald-400/80 rounded-lg flex items-center justify-center shadow-[0_0_20px_rgba(52,211,153,0.15)] animate-glow">
-                        {/* Laser line animation */}
-                        <div className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-laser" />
-                        
-                        {/* Status label inside */}
-                        <span className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-400 bg-black/70 px-2 py-0.5 rounded border border-emerald-500/20">
-                          {isSimulating ? `Scanning... ${simulatedProgress}%` : 'Align VIN Text / Barcode'}
-                        </span>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 select-none">
+                    {/* Industrial Barcode Alignment Box */}
+                    <div className="relative w-full max-w-[280px] h-[95px] border-2 border-white/70 rounded-xl bg-black/25 flex flex-col items-center justify-between p-2 shadow-2xl">
+                      {/* Crisp Corner Brackets */}
+                      <div className="absolute -top-1.5 -left-1.5 w-4 h-4 border-t-2 border-l-2 border-blue-400 rounded-tl-md" />
+                      <div className="absolute -top-1.5 -right-1.5 w-4 h-4 border-t-2 border-r-2 border-blue-400 rounded-tr-md" />
+                      <div className="absolute -bottom-1.5 -left-1.5 w-4 h-4 border-b-2 border-l-2 border-blue-400 rounded-bl-md" />
+                      <div className="absolute -bottom-1.5 -right-1.5 w-4 h-4 border-b-2 border-r-2 border-blue-400 rounded-br-md" />
 
-                        {/* Corner markers */}
-                        <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-emerald-400 rounded-tl" />
-                        <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-emerald-400 rounded-tr" />
-                        <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-emerald-400 rounded-bl" />
-                        <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-emerald-400 rounded-br" />
+                      {/* Alignment Line Guide */}
+                      <div className="w-full flex-1 flex items-center justify-center">
+                        <div className="w-11/12 h-0.5 bg-blue-500/50 rounded-full" />
                       </div>
+
+                      {/* Status indicator pill */}
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-white bg-black/70 px-3 py-0.5 rounded-full border border-white/10">
+                        {isSimulating ? `Decoding Barcode...` : 'Center Barcode in Frame'}
+                      </span>
                     </div>
-
-                    {/* Simulated bounding box of text capture */}
-                    {ocrTextFound && (
-                      <div className="absolute w-4/5 h-1/10 bg-blue-500/20 border border-blue-500 rounded flex items-center justify-center animate-pulse">
-                        <span className="font-mono text-xs font-bold text-white tracking-widest">{ocrTextFound}</span>
-                      </div>
-                    )}
-                  </>
+                  </div>
                 )}
 
                 {hasCameraPermission === 'denied' && (
@@ -1412,12 +1388,11 @@ function VinScannerModal({ isOpen, onClose, onDecode, isDark }: VinScannerModalP
                 )}
               </div>
 
-              {/* Quick demo scanner trigger buttons */}
+              {/* Sample VINs section */}
               <div className="space-y-2">
                 <div className="flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
                   <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                    Quick Test Simulation
+                    Sample VINs for Quick Testing
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5">
@@ -1425,53 +1400,53 @@ function VinScannerModal({ isOpen, onClose, onDecode, isDark }: VinScannerModalP
                     type="button"
                     disabled={isSimulating}
                     onClick={() => handleSimulateScan('1FTFW1ED4MFD00001')}
-                    className={`h-9 px-2 rounded-xl text-[10px] font-bold border text-left flex items-center justify-between transition-all active:scale-[0.98] ${
+                    className={`h-9 px-2.5 rounded-xl text-[10px] font-bold border text-left flex items-center justify-between transition-all active:scale-[0.98] ${
                       isDark 
                         ? 'bg-gray-800/40 hover:bg-gray-800 border-gray-700 text-gray-300' 
                         : 'bg-gray-50 hover:bg-gray-100 border-gray-300 text-gray-755'
                     }`}
                   >
-                    <span>🚙 Ford F-150</span>
-                    <span className="text-[9px] font-mono text-gray-500">2021 VIN</span>
+                    <span>Ford F-150</span>
+                    <span className="text-[9px] font-mono text-gray-500">2021</span>
                   </button>
                   <button
                     type="button"
                     disabled={isSimulating}
                     onClick={() => handleSimulateScan('4T1B11HK5LU010001')}
-                    className={`h-9 px-2 rounded-xl text-[10px] font-bold border text-left flex items-center justify-between transition-all active:scale-[0.98] ${
+                    className={`h-9 px-2.5 rounded-xl text-[10px] font-bold border text-left flex items-center justify-between transition-all active:scale-[0.98] ${
                       isDark 
                         ? 'bg-gray-800/40 hover:bg-gray-800 border-gray-700 text-gray-300' 
                         : 'bg-gray-50 hover:bg-gray-100 border-gray-300 text-gray-755'
                     }`}
                   >
-                    <span>🚗 Toyota Camry</span>
-                    <span className="text-[9px] font-mono text-gray-500">2020 VIN</span>
+                    <span>Toyota Camry</span>
+                    <span className="text-[9px] font-mono text-gray-500">2020</span>
                   </button>
                   <button
                     type="button"
                     disabled={isSimulating}
                     onClick={() => handleSimulateScan('1HGCV1F13KA010001')}
-                    className={`h-9 px-2 rounded-xl text-[10px] font-bold border text-left flex items-center justify-between transition-all active:scale-[0.98] ${
+                    className={`h-9 px-2.5 rounded-xl text-[10px] font-bold border text-left flex items-center justify-between transition-all active:scale-[0.98] ${
                       isDark 
                         ? 'bg-gray-800/40 hover:bg-gray-800 border-gray-700 text-gray-300' 
                         : 'bg-gray-50 hover:bg-gray-100 border-gray-300 text-gray-755'
                     }`}
                   >
-                    <span>🚗 Honda Accord</span>
-                    <span className="text-[9px] font-mono text-gray-500">2019 VIN</span>
+                    <span>Honda Accord</span>
+                    <span className="text-[9px] font-mono text-gray-500">2019</span>
                   </button>
                   <button
                     type="button"
                     disabled={isSimulating}
                     onClick={() => handleSimulateScan('1C4HJXDG9JW100001')}
-                    className={`h-9 px-2 rounded-xl text-[10px] font-bold border text-left flex items-center justify-between transition-all active:scale-[0.98] ${
+                    className={`h-9 px-2.5 rounded-xl text-[10px] font-bold border text-left flex items-center justify-between transition-all active:scale-[0.98] ${
                       isDark 
                         ? 'bg-gray-800/40 hover:bg-gray-800 border-gray-700 text-gray-300' 
                         : 'bg-gray-50 hover:bg-gray-100 border-gray-300 text-gray-755'
                     }`}
                   >
-                    <span>🚙 Jeep Wrangler</span>
-                    <span className="text-[9px] font-mono text-gray-500">2018 VIN</span>
+                    <span>Jeep Wrangler</span>
+                    <span className="text-[9px] font-mono text-gray-500">2018</span>
                   </button>
                 </div>
               </div>
