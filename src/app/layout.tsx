@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "ShopSnap",
   },
 };
@@ -30,7 +30,10 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#0b0f19",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f9fafb" },
+    { media: "(prefers-color-scheme: dark)", color: "#070b13" }
+  ],
 };
 
 export default function RootLayout({
@@ -43,7 +46,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#0b0f19] text-gray-100">
+      <body className="min-h-full flex flex-col bg-gray-50 text-gray-900 dark:bg-[#070b13] dark:text-gray-100 transition-colors">
         <PwaRegister />
         {children}
       </body>
