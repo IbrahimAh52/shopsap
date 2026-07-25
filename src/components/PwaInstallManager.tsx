@@ -17,8 +17,6 @@ export default function PwaInstallManager() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isIos, setIsIos] = useState<boolean>(false);
   const [showIosModal, setShowIosModal] = useState<boolean>(false);
-  const [showNotification, setShowNotification] = useState<boolean>(false);
-  const [notificationMsg, setNotificationMsg] = useState<string>('');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -31,17 +29,6 @@ export default function PwaInstallManager() {
         document.referrer.includes('android-app://');
       
       setIsStandalone(isStandaloneMode);
-
-      if (isStandaloneMode) {
-        // Show auto-dismissing notification if opened as standalone app
-        const hasNotified = sessionStorage.getItem('shopsnap_pwa_notified');
-        if (!hasNotified) {
-          setNotificationMsg('ShopSnap App is Installed & Running in Native Mode!');
-          setShowNotification(true);
-          sessionStorage.setItem('shopsnap_pwa_notified', 'true');
-          setTimeout(() => setShowNotification(false), 5000);
-        }
-      }
     };
 
     checkStandalone();
@@ -61,9 +48,6 @@ export default function PwaInstallManager() {
     window.addEventListener('appinstalled', () => {
       setIsStandalone(true);
       setDeferredPrompt(null);
-      setNotificationMsg('🎉 ShopSnap App successfully installed on your home screen!');
-      setShowNotification(true);
-      setTimeout(() => setShowNotification(false), 6000);
     });
 
     return () => {
@@ -81,31 +65,12 @@ export default function PwaInstallManager() {
         setDeferredPrompt(null);
       }
     } else {
-      // Fallback for Android/Desktop browsers if prompt isn't fired
       setShowIosModal(true);
     }
   };
 
   return (
     <>
-      {/* Installed Standalone Notification Toast */}
-      {showNotification && (
-        <div className="fixed top-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50 animate-in slide-in-from-top-5 duration-300">
-          <div className="bg-emerald-600 text-white p-3.5 rounded-2xl shadow-2xl border border-emerald-400/30 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <CheckCircle className="w-5 h-5 text-emerald-200 shrink-0" />
-              <p className="text-xs font-bold leading-tight">{notificationMsg}</p>
-            </div>
-            <button 
-              onClick={() => setShowNotification(false)}
-              className="p-1 hover:bg-emerald-700 rounded-lg text-emerald-100 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* iOS & Mobile PWA Instructions Modal */}
       {showIosModal && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
