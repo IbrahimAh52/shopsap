@@ -451,14 +451,20 @@ export default function MechanicDashboard() {
     // 2. Filter by search query
     const query = searchQuery.toLowerCase().trim();
     if (!query) return true;
-    return (
-      item.vehicleMake.toLowerCase().includes(query) ||
-      item.vehicleModel.toLowerCase().includes(query) ||
-      item.vehicleYear.toString().includes(query) ||
-      item.customerPhone.toLowerCase().includes(query) ||
-      (item.vin && item.vin.toLowerCase().includes(query)) ||
-      item.repairName.toLowerCase().includes(query)
-    );
+
+    const cleanQueryDigits = query.replace(/[^0-9]/g, '');
+    const cleanPhoneDigits = item.customerPhone.replace(/[^0-9]/g, '');
+    const matchesPhone = item.customerPhone.toLowerCase().includes(query) || 
+      (cleanQueryDigits.length >= 3 && cleanPhoneDigits.includes(cleanQueryDigits));
+
+    const matchesVin = item.vin ? item.vin.toLowerCase().includes(query) : false;
+    const matchesVehicle = `${item.vehicleYear} ${item.vehicleMake} ${item.vehicleModel}`.toLowerCase().includes(query);
+    const matchesRepair = item.repairName.toLowerCase().includes(query);
+    const matchesItems = item.items ? item.items.some(i => i.name.toLowerCase().includes(query)) : false;
+    const matchesAdvisor = item.advisorName ? item.advisorName.toLowerCase().includes(query) : false;
+    const matchesSignature = item.signature ? item.signature.toLowerCase().includes(query) : false;
+
+    return matchesPhone || matchesVin || matchesVehicle || matchesRepair || matchesItems || matchesAdvisor || matchesSignature;
   });
 
   const awaitingInspection = searchedInspections.filter(i => i.status === 'AWAITING_INSPECTION');
@@ -673,6 +679,35 @@ export default function MechanicDashboard() {
           </select>
         </div>
 
+        {/* Active Search Context Notification Banner */}
+        {searchQuery && (
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-900 dark:text-blue-200 shadow-2xs">
+            <span className="font-semibold">
+              Found <strong className="font-extrabold">{searchedInspections.length}</strong> matching record{searchedInspections.length === 1 ? '' : 's'} for &ldquo;{searchQuery}&rdquo;
+            </span>
+            <div className="flex items-center gap-2 shrink-0">
+              {activeTab === 'active' && archived.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('archived')}
+                  className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold shadow-2xs transition-colors"
+                >
+                  View {archived.length} in Archived →
+                </button>
+              )}
+              {activeTab === 'archived' && (awaitingInspection.length + sentToCustomer.length + approvedReady.length + declined.length) > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('active')}
+                  className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold shadow-2xs transition-colors"
+                >
+                  View {awaitingInspection.length + sentToCustomer.length + approvedReady.length + declined.length} in Active →
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Tab Navigation */}
         <div className={`flex items-center gap-1 p-1 rounded-xl mt-4 mb-1 select-none ${
           isDark ? 'bg-gray-900/40 border border-gray-800/80' : 'bg-gray-100 border border-gray-200/60'
@@ -783,7 +818,7 @@ export default function MechanicDashboard() {
             </div>
 
             {/* Awaiting Inspection */}
-            <div className={`space-y-3 ${activeMobileLane === 'awaiting' ? 'block' : 'hidden md:block'}`}>
+            <div className={`space-y-3 ${searchQuery || activeMobileLane === 'awaiting' ? 'block' : 'hidden md:block'}`}>
               <div className={`flex items-center gap-2 border-b pb-1.5 ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
                 <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
                 <h2 className={`font-bold text-xs uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -811,7 +846,7 @@ export default function MechanicDashboard() {
             </div>
 
             {/* Sent to Customer */}
-            <div className={`space-y-3 ${activeMobileLane === 'sent' ? 'block' : 'hidden md:block'}`}>
+            <div className={`space-y-3 ${searchQuery || activeMobileLane === 'sent' ? 'block' : 'hidden md:block'}`}>
               <div className={`flex items-center gap-2 border-b pb-1.5 ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
                 <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
                 <h2 className={`font-bold text-xs uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -839,7 +874,7 @@ export default function MechanicDashboard() {
             </div>
 
             {/* Approved */}
-            <div className={`space-y-3 ${activeMobileLane === 'approved' ? 'block' : 'hidden md:block'}`}>
+            <div className={`space-y-3 ${searchQuery || activeMobileLane === 'approved' ? 'block' : 'hidden md:block'}`}>
               <div className={`flex items-center gap-2 border-b pb-1.5 ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
                 <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                 <h2 className={`font-bold text-xs uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -867,7 +902,7 @@ export default function MechanicDashboard() {
             </div>
 
             {/* Declined */}
-            <div className={`space-y-3 ${activeMobileLane === 'declined' ? 'block' : 'hidden md:block'}`}>
+            <div className={`space-y-3 ${searchQuery || activeMobileLane === 'declined' ? 'block' : 'hidden md:block'}`}>
               <div className={`flex items-center gap-2 border-b pb-1.5 ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
                 <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
                 <h2 className={`font-bold text-xs uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
