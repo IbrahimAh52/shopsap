@@ -582,7 +582,7 @@ export default function MechanicDashboard() {
       )}
 
       {/* Main Content */}
-      <main className="flex-1 p-4 max-w-6xl mx-auto w-full space-y-6">
+      <main className="flex-1 p-4 max-w-6xl mx-auto w-full space-y-6 pb-28 pb-safe">
         
         {/* SMS Notification Banner */}
         {lastSmsMessage && (

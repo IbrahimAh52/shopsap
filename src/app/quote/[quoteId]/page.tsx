@@ -288,10 +288,8 @@ export default function CustomerQuotePortal() {
           </div>
         )}
 
-        {/* Structured Transaction Receipt */}
+        {/* Structured Native Transaction Card */}
         <div className="bg-white rounded-3xl border border-gray-200/80 shadow-md overflow-hidden relative">
-          {/* Top Tear Decoration */}
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-b from-gray-100 to-transparent" />
           
           <div className="p-5 space-y-5">
             {/* Section: Vehicle Info */}
@@ -380,15 +378,8 @@ export default function CustomerQuotePortal() {
 
           </div>
 
-          {/* Dotted Tear line */}
-          <div className="w-full flex items-center justify-between px-3">
-            {[...Array(24)].map((_, i) => (
-              <span key={i} className="w-1.5 h-1.5 rounded-full bg-gray-100" />
-            ))}
-          </div>
-
-          {/* Footer state display */}
-          <div className="p-5 bg-gray-50/50">
+          {/* Native Action Section */}
+          <div className="p-5 bg-gray-50/70 border-t border-gray-150 space-y-3">
             {inspection.status === 'APPROVED' ? (
               <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex flex-col items-center text-center gap-1.5">
                 <CheckCircle className="w-8 h-8 text-emerald-600" />
@@ -443,18 +434,18 @@ export default function CustomerQuotePortal() {
                 </button>
               </div>
             )}
-          </div>
 
-          {/* Quick Print/PDF Invoice Footer */}
-          <div className="p-4 bg-gray-50 border-t border-gray-150 no-print flex items-center justify-center">
-            <button
-              type="button"
-              onClick={() => window.print()}
-              className="w-full py-2.5 px-4 rounded-xl border border-gray-300 bg-white hover:bg-gray-100 text-gray-800 text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-2xs"
-            >
-              <Printer className="w-4 h-4 text-blue-600" />
-              <span>Print / Download Invoice PDF</span>
-            </button>
+            {/* Quick Print/PDF Invoice Button */}
+            <div className="pt-2 no-print">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="w-full py-2.5 px-4 rounded-xl border border-gray-300 bg-white hover:bg-gray-100 text-gray-800 text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-2xs"
+              >
+                <Printer className="w-4 h-4 text-blue-600" />
+                <span>Print / Download Invoice PDF</span>
+              </button>
+            </div>
           </div>
         </div>
       </main>
@@ -503,10 +494,12 @@ export default function CustomerQuotePortal() {
         </div>
       )}
 
-      {/* Trust Footer */}
-      <footer className="no-print text-center py-8 text-[11px] text-gray-400 font-semibold space-y-1 bg-gray-100/30 border-t border-gray-200/50 mt-12 w-full">
-        <p>Powered by <span className="font-extrabold text-gray-600 tracking-tight">ShopSnap</span></p>
-        <p className="text-[10px] text-gray-400 font-normal">© {new Date().getFullYear()} ShopSnap Transaction Portal. All rights reserved.</p>
+      {/* Sleek Native App Bottom Footer */}
+      <footer className="no-print py-6 pb-safe px-4 text-center select-none">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-white text-xs font-semibold text-gray-500 shadow-2xs">
+          <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+          <span>Powered by <strong className="font-extrabold text-gray-800">ShopSnap</strong></span>
+        </div>
       </footer>
     </div>
   );
