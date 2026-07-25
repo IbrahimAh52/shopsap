@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { 
   ShieldCheck, 
   Car, 
@@ -9,7 +9,9 @@ import {
   CheckCircle, 
   AlertTriangle, 
   MessageSquare,
-  Lock
+  Lock,
+  Printer,
+  FileText
 } from 'lucide-react';
 import { db, Inspection } from '@/lib/db';
 
@@ -32,7 +34,9 @@ const PROVINCE_TAXES: Record<string, { name: string; rate: number; label: string
 
 export default function CustomerQuotePortal() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const quoteId = params.quoteId as string;
+  const shouldAutoPrint = searchParams.get('print') === '1';
 
   const [inspection, setInspection] = useState<Inspection | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -42,6 +46,15 @@ export default function CustomerQuotePortal() {
   const [showSignatureModal, setShowSignatureModal] = useState<boolean>(false);
   const [signatureName, setSignatureName] = useState<string>('');
   const [submitting, setSubmitting] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (shouldAutoPrint && inspection && !loading) {
+      const timer = setTimeout(() => {
+        window.print();
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [shouldAutoPrint, inspection, loading]);
 
   useEffect(() => {
     const fetchQuote = async () => {
@@ -176,13 +189,34 @@ export default function CustomerQuotePortal() {
   return (
     <div className="flex flex-col flex-1 min-h-screen bg-gray-50 text-gray-900 font-sans antialiased selection:bg-blue-100">
       
+      {/* Global Print Styles */}
+      <style>{`
+        @media print {
+          body {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+          .print-container {
+            max-width: 100% !important;
+            width: 100% !important;
+            box-shadow: none !important;
+            border: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+        }
+      `}</style>
+      
       {/* Carrier-grade Minimalist Top Indicator */}
-      <div className="bg-gray-900 text-white pb-2 pt-safe px-4 text-center text-[10px] font-bold tracking-widest flex items-center justify-center gap-1.5 uppercase select-none">
+      <div className="no-print bg-gray-900 text-white pb-2 pt-safe px-4 text-center text-[10px] font-bold tracking-widest flex items-center justify-center gap-1.5 uppercase select-none">
         <Lock className="w-3 h-3 text-blue-400" /> SECURE VEHICLE TRANSACTION PORTAL
       </div>
 
       {/* Brand Shop Header */}
-      <header className="px-4 py-3 bg-white border-b border-gray-200/80 flex items-center justify-between shadow-xs sticky top-0 z-40">
+      <header className="no-print px-4 py-3 bg-white border-b border-gray-200/80 flex items-center justify-between shadow-xs sticky top-0 z-40">
         <div className="flex items-center gap-2">
           <div className="relative w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-650 flex items-center justify-center text-white shadow-xs">
             <Wrench className="w-4 h-4" />
@@ -192,16 +226,41 @@ export default function CustomerQuotePortal() {
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 text-[11px] font-bold text-gray-600 bg-gray-100 border border-gray-200 px-2.5 py-1 rounded-full">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Verified Shop</span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="px-3 py-1.5 rounded-xl border border-gray-300 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs"
+            title="Print or Save PDF Invoice"
+          >
+            <Printer className="w-3.5 h-3.5 text-blue-600" />
+            <span>Print / PDF Invoice</span>
+          </button>
         </div>
       </header>
 
-      <main className="flex-1 p-4 max-w-md mx-auto w-full space-y-5 py-6">
+      <main className="flex-1 p-4 max-w-md mx-auto w-full space-y-5 py-6 print-container">
         
+        {/* Letterhead Header for Print / PDF */}
+        <div className="hidden print:block border-b-2 border-gray-900 pb-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-black text-gray-900 uppercase tracking-tight">{displayShopName}</h1>
+              <p className="text-xs text-gray-600 font-bold uppercase tracking-wider mt-0.5">Official Vehicle Repair Invoice & Receipt</p>
+            </div>
+            <div className="text-right">
+              <span className="text-xs font-mono font-bold uppercase bg-gray-100 px-2.5 py-1 border border-gray-300 rounded">
+                INVOICE #: {quoteId.split('-')[1] || quoteId.slice(0, 8)}
+              </span>
+              <p className="text-[10px] text-gray-500 font-mono mt-1">
+                Date: {new Date(inspection.updatedAt || inspection.createdAt).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Verification Card */}
-        <div className="bg-white rounded-2xl border border-gray-200/80 shadow-md p-4 flex items-center justify-between">
+        <div className="no-print bg-white rounded-2xl border border-gray-200/80 shadow-md p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-blue-50 text-blue-600 p-2.5 rounded-xl border border-blue-100/50">
               <ShieldCheck className="w-5 h-5" />
@@ -218,7 +277,7 @@ export default function CustomerQuotePortal() {
 
         {/* Video Player Section */}
         {inspection.videoUrl && (
-          <div className="bg-black rounded-3xl overflow-hidden aspect-[4/3] shadow-lg border border-gray-200 relative">
+          <div className="no-print bg-black rounded-3xl overflow-hidden aspect-[4/3] shadow-lg border border-gray-200 relative">
             <video 
               src={inspection.videoUrl} 
               controls 
@@ -385,12 +444,24 @@ export default function CustomerQuotePortal() {
               </div>
             )}
           </div>
+
+          {/* Quick Print/PDF Invoice Footer */}
+          <div className="p-4 bg-gray-50 border-t border-gray-150 no-print flex items-center justify-center">
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="w-full py-2.5 px-4 rounded-xl border border-gray-300 bg-white hover:bg-gray-100 text-gray-800 text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-2xs"
+            >
+              <Printer className="w-4 h-4 text-blue-600" />
+              <span>Print / Download Invoice PDF</span>
+            </button>
+          </div>
         </div>
       </main>
 
       {/* Signature Capture Modal */}
       {showSignatureModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="no-print fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-sm border border-gray-200 p-6 space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
             <div className="text-center space-y-1">
               <h3 className="text-base font-extrabold text-gray-900">Sign Authorization</h3>
@@ -433,7 +504,7 @@ export default function CustomerQuotePortal() {
       )}
 
       {/* Trust Footer */}
-      <footer className="text-center py-8 text-[11px] text-gray-400 font-semibold space-y-1 bg-gray-100/30 border-t border-gray-200/50 mt-12 w-full">
+      <footer className="no-print text-center py-8 text-[11px] text-gray-400 font-semibold space-y-1 bg-gray-100/30 border-t border-gray-200/50 mt-12 w-full">
         <p>Powered by <span className="font-extrabold text-gray-600 tracking-tight">ShopSnap</span></p>
         <p className="text-[10px] text-gray-400 font-normal">© {new Date().getFullYear()} ShopSnap Transaction Portal. All rights reserved.</p>
       </footer>

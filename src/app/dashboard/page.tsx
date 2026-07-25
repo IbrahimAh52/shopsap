@@ -29,7 +29,8 @@ import {
   Settings,
   ChevronDown,
   Archive,
-  Trash2
+  Trash2,
+  Printer
 } from 'lucide-react';
 import { db, Inspection, isSupabaseConfigured } from '@/lib/db';
 import { offlineQueue } from '@/lib/offline-queue';
@@ -1603,7 +1604,21 @@ function ArchivedCard({ item, isDark, formatCost, onResendSms, onDelete }: Archi
             }`}
           >
             <ExternalLink className="w-3 h-3" />
-            <span>View Receipt</span>
+            <span>Receipt</span>
+          </Link>
+          <Link
+            href={`/quote/${item.id}?print=1`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`flex-1 h-8 rounded-lg text-[10px] font-bold border transition-colors flex items-center justify-center gap-1 ${
+              isDark 
+                ? 'bg-blue-600/10 border-blue-500/20 text-blue-400 hover:bg-blue-600/20' 
+                : 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'
+            }`}
+            title="Print or Download PDF Invoice"
+          >
+            <Printer className="w-3 h-3 text-blue-500" />
+            <span>PDF Invoice</span>
           </Link>
           {onResendSms && (
             <button
