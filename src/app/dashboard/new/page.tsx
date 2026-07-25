@@ -581,7 +581,6 @@ function NewInspectionForm() {
               isDark ? 'border-gray-800' : 'border-gray-200'
             }`}>
               <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-blue-500">
-                <Sparkles className="w-3.5 h-3.5 text-blue-500 animate-pulse" />
                 <span>Vehicle Information</span>
               </div>
               <button
