@@ -452,10 +452,19 @@ export default function MechanicDashboard() {
     const query = searchQuery.toLowerCase().trim();
     if (!query) return true;
 
-    const cleanQueryDigits = query.replace(/[^0-9]/g, '');
-    const cleanPhoneDigits = item.customerPhone.replace(/[^0-9]/g, '');
-    const matchesPhone = item.customerPhone.toLowerCase().includes(query) || 
-      (cleanQueryDigits.length >= 3 && cleanPhoneDigits.includes(cleanQueryDigits));
+    const queryDigits = query.replace(/[^0-9]/g, '');
+    const phoneDigits = (item.customerPhone || '').replace(/[^0-9]/g, '');
+
+    const phoneNoOne = phoneDigits.startsWith('1') && phoneDigits.length > 10 ? phoneDigits.slice(1) : phoneDigits;
+    const queryNoOne = queryDigits.startsWith('1') && queryDigits.length > 10 ? queryDigits.slice(1) : queryDigits;
+
+    const matchesPhone = item.customerPhone.toLowerCase().includes(query) ||
+      (queryDigits.length > 0 && (
+        phoneDigits.includes(queryDigits) ||
+        phoneNoOne.includes(queryNoOne) ||
+        phoneNoOne.includes(queryDigits) ||
+        phoneDigits.includes(queryNoOne)
+      ));
 
     const matchesVin = item.vin ? item.vin.toLowerCase().includes(query) : false;
     const matchesVehicle = `${item.vehicleYear} ${item.vehicleMake} ${item.vehicleModel}`.toLowerCase().includes(query);
