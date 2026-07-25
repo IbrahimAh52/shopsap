@@ -73,11 +73,10 @@ export default function MechanicDashboard() {
     return false;
   });
 
-  // Search & Tab States
+  // Search & Status Filter States
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
   const [advisorFilter, setAdvisorFilter] = useState<string>('all');
-  const [activeMobileLane, setActiveMobileLane] = useState<'awaiting' | 'sent' | 'approved' | 'declined'>('awaiting');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'awaiting' | 'sent' | 'approved' | 'declined' | 'archived'>('all');
 
   // Settings states: read saved values immediately so they never flash defaults
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
@@ -699,19 +698,19 @@ export default function MechanicDashboard() {
               Found <strong className="font-extrabold text-blue-600 dark:text-blue-400">{searchedInspections.length}</strong> matching record{searchedInspections.length === 1 ? '' : 's'} for &ldquo;<span className={`font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{searchQuery}</span>&rdquo;
             </span>
             <div className="flex items-center gap-2 shrink-0">
-              {activeTab === 'active' && archived.length > 0 && (
+              {statusFilter !== 'archived' && archived.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => setActiveTab('archived')}
+                  onClick={() => setStatusFilter('archived')}
                   className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold shadow-2xs transition-colors"
                 >
                   View {archived.length} in Archived →
                 </button>
               )}
-              {activeTab === 'archived' && (awaitingInspection.length + sentToCustomer.length + approvedReady.length + declined.length) > 0 && (
+              {statusFilter === 'archived' && (awaitingInspection.length + sentToCustomer.length + approvedReady.length + declined.length) > 0 && (
                 <button
                   type="button"
-                  onClick={() => setActiveTab('active')}
+                  onClick={() => setStatusFilter('all')}
                   className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold shadow-2xs transition-colors"
                 >
                   View {awaitingInspection.length + sentToCustomer.length + approvedReady.length + declined.length} in Active →
@@ -721,226 +720,166 @@ export default function MechanicDashboard() {
           </div>
         )}
 
-        {/* Tab Navigation */}
-        <div className={`flex items-center gap-1 p-1 rounded-xl mt-4 mb-1 select-none ${
-          isDark ? 'bg-gray-900/40 border border-gray-800/80' : 'bg-gray-100 border border-gray-200/60'
-        }`}>
-          <button
-            onClick={() => setActiveTab('active')}
-            className={`flex-1 py-2.5 px-4 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
-              activeTab === 'active'
-                ? isDark
-                  ? 'bg-gray-800 text-white shadow-md shadow-black/20 border border-gray-700/50'
-                  : 'bg-white text-gray-900 shadow-sm border border-gray-200/80'
-                : isDark
-                  ? 'text-gray-500 hover:text-gray-300'
-                  : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <span>Active</span>
-            <span className={`text-[10px] min-w-[20px] px-1.5 py-0.5 rounded-full font-bold leading-none ${
-              activeTab === 'active'
-                ? 'bg-blue-600 text-white'
-                : isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-200 text-gray-500'
-            }`}>
-              {awaitingInspection.length + sentToCustomer.length + approvedReady.length + declined.length}
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab('archived')}
-            className={`flex-1 py-2.5 px-4 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
-              activeTab === 'archived'
-                ? isDark
-                  ? 'bg-gray-800 text-white shadow-md shadow-black/20 border border-gray-700/50'
-                  : 'bg-white text-gray-900 shadow-sm border border-gray-200/80'
-                : isDark
-                  ? 'text-gray-500 hover:text-gray-300'
-                  : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <span>Archived</span>
-            <span className={`text-[10px] min-w-[20px] px-1.5 py-0.5 rounded-full font-bold leading-none ${
-              activeTab === 'archived'
-                ? 'bg-blue-600 text-white'
-                : isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-200 text-gray-500'
-            }`}>
-              {archived.length}
-            </span>
-          </button>
+        {/* Unified Status Filter Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1.5 select-none font-sans border-b border-gray-200/50 dark:border-gray-800/50">
+          {[
+            { id: 'all', label: 'All Active', count: awaitingInspection.length + sentToCustomer.length + approvedReady.length + declined.length, dotColor: 'bg-blue-500', activeClass: 'bg-blue-600 border-blue-500 text-white shadow-xs' },
+            { id: 'awaiting', label: 'Awaiting', count: awaitingInspection.length, dotColor: 'bg-amber-500', activeClass: 'bg-amber-600 border-amber-500 text-white shadow-xs' },
+            { id: 'sent', label: 'Sent', count: sentToCustomer.length, dotColor: 'bg-blue-500', activeClass: 'bg-blue-600 border-blue-500 text-white shadow-xs' },
+            { id: 'approved', label: 'Approved', count: approvedReady.length, dotColor: 'bg-emerald-500', activeClass: 'bg-emerald-600 border-emerald-500 text-white shadow-xs' },
+            { id: 'declined', label: 'Declined', count: declined.length, dotColor: 'bg-red-500', activeClass: 'bg-red-600 border-red-500 text-white shadow-xs' },
+            { id: 'archived', label: 'Archived', count: archived.length, dotColor: 'bg-slate-400', activeClass: 'bg-slate-700 border-slate-600 text-white shadow-xs' }
+          ].map((pill) => {
+            const isActive = statusFilter === pill.id;
+            return (
+              <button
+                key={pill.id}
+                type="button"
+                onClick={() => setStatusFilter(pill.id as any)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 border shrink-0 ${
+                  isActive
+                    ? pill.activeClass
+                    : isDark
+                      ? 'bg-gray-900/60 border-gray-800 text-gray-400 hover:bg-gray-800 hover:text-white'
+                      : 'bg-white border-gray-250 text-gray-700 hover:bg-gray-100 shadow-2xs'
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-white' : pill.dotColor}`} />
+                <span>{pill.label}</span>
+                <span className={`text-[10px] min-w-[18px] text-center px-1.5 py-0.2 rounded-full font-mono font-extrabold ${
+                  isActive 
+                    ? 'bg-white/20 text-white' 
+                    : isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 border border-gray-250 text-gray-700'
+                }`}>
+                  {pill.count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
-        {activeTab === 'active' ? (
+        {statusFilter !== 'archived' ? (
           /* Vehicle Status Sections */
           <section className="space-y-6">
-            
-            {/* Mobile Lane Sub-Tabs Selector */}
-            <div className="grid grid-cols-2 gap-2 md:hidden mb-4 select-none">
-              {[
-                { 
-                  id: 'awaiting', 
-                  label: 'Awaiting', 
-                  count: awaitingInspection.length, 
-                  dotColor: 'bg-amber-500',
-                  activeClass: 'bg-amber-600 text-white border-amber-600 shadow-xs',
-                  inactiveClass: 'bg-amber-50 text-amber-800 border-amber-200/80 hover:bg-amber-100'
-                },
-                { 
-                  id: 'sent', 
-                  label: 'Sent', 
-                  count: sentToCustomer.length, 
-                  dotColor: 'bg-blue-500',
-                  activeClass: 'bg-blue-600 text-white border-blue-600 shadow-xs',
-                  inactiveClass: 'bg-blue-50 text-blue-800 border-blue-200/80 hover:bg-blue-100'
-                },
-                { 
-                  id: 'approved', 
-                  label: 'Approved', 
-                  count: approvedReady.length, 
-                  dotColor: 'bg-emerald-500',
-                  activeClass: 'bg-emerald-600 text-white border-emerald-600 shadow-xs',
-                  inactiveClass: 'bg-emerald-50 text-emerald-800 border-emerald-200/80 hover:bg-emerald-100'
-                },
-                { 
-                  id: 'declined', 
-                  label: 'Declined', 
-                  count: declined.length, 
-                  dotColor: 'bg-red-500',
-                  activeClass: 'bg-red-600 text-white border-red-600 shadow-xs',
-                  inactiveClass: 'bg-red-50 text-red-800 border-red-200/80 hover:bg-red-100'
-                }
-              ].map((lane) => (
-                <button
-                  key={lane.id}
-                  type="button"
-                  onClick={() => setActiveMobileLane(lane.id as any)}
-                  className={`py-2.5 px-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-between border ${
-                    activeMobileLane === lane.id ? lane.activeClass : lane.inactiveClass
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${activeMobileLane === lane.id ? 'bg-white' : lane.dotColor}`} />
-                    <span>{lane.label}</span>
-                  </div>
-                  <span className={`text-[10px] min-w-[22px] text-center px-1.5 py-0.5 rounded-full font-mono font-extrabold ${
-                    activeMobileLane === lane.id ? 'bg-white/20 text-white' : 'bg-white/90 border border-current/20 text-gray-800'
-                  }`}>
-                    {lane.count}
-                  </span>
-                </button>
-              ))}
-            </div>
-
             {/* Awaiting Inspection */}
-            <div className={`space-y-3 ${searchQuery || activeMobileLane === 'awaiting' ? 'block' : 'hidden md:block'}`}>
-              <div className={`flex items-center gap-2 border-b pb-1.5 ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-                <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
-                <h2 className={`font-bold text-xs uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Awaiting Video / Inspection ({awaitingInspection.length})
-                </h2>
-              </div>
-              {awaitingInspection.length === 0 ? (
-                <p className="text-xs text-gray-400 italic py-2">No vehicles in queue.</p>
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {awaitingInspection.map(i => (
-                    <InspectionCard 
-                      key={i.id} 
-                      item={i} 
-                      isDark={isDark} 
-                      onCopyLink={handleCopyLink}
-                      copiedId={copiedId}
-                      onVerbalApproval={setVerbalApprovalId}
-                      onComplete={handleCompleteWork}
-                      onSendQuoteDirect={handleSendQuoteDirect}
-                    />
-                  ))}
+            {(searchQuery || statusFilter === 'all' || statusFilter === 'awaiting') && (
+              <div className="space-y-3">
+                <div className={`flex items-center gap-2 border-b pb-1.5 ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
+                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+                  <h2 className={`font-bold text-xs uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Awaiting Video / Inspection ({awaitingInspection.length})
+                  </h2>
                 </div>
-              )}
-            </div>
+                {awaitingInspection.length === 0 ? (
+                  <p className="text-xs text-gray-400 italic py-2">No vehicles in queue.</p>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {awaitingInspection.map(i => (
+                      <InspectionCard 
+                        key={i.id} 
+                        item={i} 
+                        isDark={isDark} 
+                        onCopyLink={handleCopyLink}
+                        copiedId={copiedId}
+                        onVerbalApproval={setVerbalApprovalId}
+                        onComplete={handleCompleteWork}
+                        onSendQuoteDirect={handleSendQuoteDirect}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Sent to Customer */}
-            <div className={`space-y-3 ${searchQuery || activeMobileLane === 'sent' ? 'block' : 'hidden md:block'}`}>
-              <div className={`flex items-center gap-2 border-b pb-1.5 ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-                <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-                <h2 className={`font-bold text-xs uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Sent to Customer - Awaiting Approval ({sentToCustomer.length})
-                </h2>
-              </div>
-              {sentToCustomer.length === 0 ? (
-                <p className="text-xs text-gray-400 italic py-2">No inspections currently sent.</p>
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {sentToCustomer.map(i => (
-                    <InspectionCard 
-                      key={i.id} 
-                      item={i} 
-                      isDark={isDark} 
-                      onCopyLink={handleCopyLink}
-                      copiedId={copiedId}
-                      onVerbalApproval={setVerbalApprovalId}
-                      onComplete={handleCompleteWork}
-                      onSendQuoteDirect={handleSendQuoteDirect}
-                    />
-                  ))}
+            {(searchQuery || statusFilter === 'all' || statusFilter === 'sent') && (
+              <div className="space-y-3">
+                <div className={`flex items-center gap-2 border-b pb-1.5 ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
+                  <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                  <h2 className={`font-bold text-xs uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Sent to Customer - Awaiting Approval ({sentToCustomer.length})
+                  </h2>
                 </div>
-              )}
-            </div>
+                {sentToCustomer.length === 0 ? (
+                  <p className="text-xs text-gray-400 italic py-2">No inspections currently sent.</p>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {sentToCustomer.map(i => (
+                      <InspectionCard 
+                        key={i.id} 
+                        item={i} 
+                        isDark={isDark} 
+                        onCopyLink={handleCopyLink}
+                        copiedId={copiedId}
+                        onVerbalApproval={setVerbalApprovalId}
+                        onComplete={handleCompleteWork}
+                        onSendQuoteDirect={handleSendQuoteDirect}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Approved */}
-            <div className={`space-y-3 ${searchQuery || activeMobileLane === 'approved' ? 'block' : 'hidden md:block'}`}>
-              <div className={`flex items-center gap-2 border-b pb-1.5 ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                <h2 className={`font-bold text-xs uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Approved - Ready to Work ({approvedReady.length})
-                </h2>
-              </div>
-              {approvedReady.length === 0 ? (
-                <p className="text-xs text-gray-400 italic py-2">No approved repairs ready to start.</p>
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {approvedReady.map(i => (
-                    <InspectionCard 
-                      key={i.id} 
-                      item={i} 
-                      isDark={isDark} 
-                      onCopyLink={handleCopyLink}
-                      copiedId={copiedId}
-                      onVerbalApproval={setVerbalApprovalId}
-                      onComplete={handleCompleteWork}
-                      onSendQuoteDirect={handleSendQuoteDirect}
-                    />
-                  ))}
+            {(searchQuery || statusFilter === 'all' || statusFilter === 'approved') && (
+              <div className="space-y-3">
+                <div className={`flex items-center gap-2 border-b pb-1.5 ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                  <h2 className={`font-bold text-xs uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Approved - Ready to Work ({approvedReady.length})
+                  </h2>
                 </div>
-              )}
-            </div>
+                {approvedReady.length === 0 ? (
+                  <p className="text-xs text-gray-400 italic py-2">No approved repairs ready to start.</p>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {approvedReady.map(i => (
+                      <InspectionCard 
+                        key={i.id} 
+                        item={i} 
+                        isDark={isDark} 
+                        onCopyLink={handleCopyLink}
+                        copiedId={copiedId}
+                        onVerbalApproval={setVerbalApprovalId}
+                        onComplete={handleCompleteWork}
+                        onSendQuoteDirect={handleSendQuoteDirect}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Declined */}
-            <div className={`space-y-3 ${searchQuery || activeMobileLane === 'declined' ? 'block' : 'hidden md:block'}`}>
-              <div className={`flex items-center gap-2 border-b pb-1.5 ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-                <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
-                <h2 className={`font-bold text-xs uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Declined ({declined.length})
-                </h2>
-              </div>
-              {declined.length === 0 ? (
-                <p className="text-xs text-gray-400 italic py-2">No declined quotes.</p>
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {declined.map(i => (
-                    <InspectionCard 
-                      key={i.id} 
-                      item={i} 
-                      isDark={isDark} 
-                      onCopyLink={handleCopyLink}
-                      copiedId={copiedId}
-                      onVerbalApproval={setVerbalApprovalId}
-                      onComplete={handleCompleteWork}
-                      onSendQuoteDirect={handleSendQuoteDirect}
-                    />
-                  ))}
+            {(searchQuery || statusFilter === 'all' || statusFilter === 'declined') && (
+              <div className="space-y-3">
+                <div className={`flex items-center gap-2 border-b pb-1.5 ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                  <h2 className={`font-bold text-xs uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Declined ({declined.length})
+                  </h2>
                 </div>
-              )}
-            </div>
+                {declined.length === 0 ? (
+                  <p className="text-xs text-gray-400 italic py-2">No declined quotes.</p>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {declined.map(i => (
+                      <InspectionCard 
+                        key={i.id} 
+                        item={i} 
+                        isDark={isDark} 
+                        onCopyLink={handleCopyLink}
+                        copiedId={copiedId}
+                        onVerbalApproval={setVerbalApprovalId}
+                        onComplete={handleCompleteWork}
+                        onSendQuoteDirect={handleSendQuoteDirect}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </section>
         ) : (
           /* Archived History */
