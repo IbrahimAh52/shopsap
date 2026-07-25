@@ -681,9 +681,13 @@ export default function MechanicDashboard() {
 
         {/* Active Search Context Notification Banner */}
         {searchQuery && (
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-900 dark:text-blue-200 shadow-2xs">
+          <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3 rounded-xl text-xs shadow-2xs border transition-colors ${
+            isDark 
+              ? 'bg-blue-950/40 border-blue-800 text-blue-200' 
+              : 'bg-blue-50 border-blue-200 text-blue-800'
+          }`}>
             <span className="font-semibold">
-              Found <strong className="font-extrabold">{searchedInspections.length}</strong> matching record{searchedInspections.length === 1 ? '' : 's'} for &ldquo;{searchQuery}&rdquo;
+              Found <strong className="font-extrabold text-blue-600 dark:text-blue-400">{searchedInspections.length}</strong> matching record{searchedInspections.length === 1 ? '' : 's'} for &ldquo;<span className={`font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{searchQuery}</span>&rdquo;
             </span>
             <div className="flex items-center gap-2 shrink-0">
               {activeTab === 'active' && archived.length > 0 && (
